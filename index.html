@@ -3,18 +3,53 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="VELOX — digital product development studio. MVP, SaaS, marketplaces, AI integrations from idea to launch in 4–12 weeks.">
-<meta name="theme-color" content="#080808">
-<meta property="og:title" content="VELOX — Digital Product Development">
-<meta property="og:description" content="From idea to launch in 4–12 weeks. MVP, SaaS, automation, AI integrations.">
+<meta name="robots" content="index, follow">
+<meta name="description" content="Queen of Spades Tech — digital product studio. We build MVPs, SaaS platforms, marketplaces & AI integrations from idea to launch in 4–12 weeks. Free estimate.">
+<meta name="keywords" content="MVP development, SaaS development, digital product studio, AI integration, web development, custom software, marketplace development, product development company">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="author" content="Queen of Spades Tech">
+<!-- Open Graph -->
+<meta property="og:title" content="Queen of Spades Tech — MVP, SaaS & AI Product Development">
+<meta property="og:description" content="We build digital products from idea to launch in 4–12 weeks. MVP, SaaS, marketplaces, AI integrations. Free estimate.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://queenofspades.tech/">
 <meta property="og:locale" content="en_US">
-<title>VELOX — Digital Product Development</title>
+<meta property="og:image" content="https://queenofspades.tech/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:site_name" content="Queen of Spades Tech">
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Queen of Spades Tech — MVP, SaaS & AI Product Development">
+<meta name="twitter:description" content="Digital products from idea to launch in 4–12 weeks. Free estimate.">
+<meta name="twitter:image" content="https://queenofspades.tech/og-image.png">
+<title>Queen of Spades Tech — MVP, SaaS & AI Product Development</title>
+<link rel="canonical" href="https://queenofspades.tech/">
+<link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml" sizes="any">
+<link rel="icon" href="/favicon-16.png?v=2" type="image/png" sizes="16x16">
+<link rel="icon" href="/favicon-32.png?v=2" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
+<!-- JSON-LD Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Queen of Spades Tech",
+  "url": "https://queenofspades.tech",
+  "email": "hello@queenofspades.tech",
+  "description": "Digital product development studio. MVP, SaaS, marketplaces, AI integrations from idea to launch in 4–12 weeks.",
+  "foundingDate": "2025",
+  "areaServed": "Worldwide",
+  "serviceType": ["MVP Development", "SaaS Development", "Marketplace Development", "AI Integration", "Custom Software Development"]
+}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://cdnjs.cloudflare.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=26">
+<link rel="stylesheet" href="icons.css?v=23">
 </head>
 <body>
 
@@ -24,15 +59,8 @@
 <!-- ═══ HEADER ═══ -->
 <header>
 <nav role="navigation" aria-label="Main navigation">
-  <a href="#" class="logo">
-    <div class="logo-mark">
-      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M4 8L16 2L28 8V24L16 30L4 24V8Z" stroke="#40c4ff" stroke-width="1.5" fill="none"/>
-        <path d="M16 2V30M4 8L28 24M28 8L4 24" stroke="#40c4ff" stroke-width="0.6" stroke-opacity="0.35"/>
-        <circle cx="16" cy="16" r="3" fill="#40c4ff" opacity="0.8"/>
-      </svg>
-    </div>
-    <span class="logo-text">VELOX</span>
+  <a href="/" class="logo">
+    <span class="logo-text">Queen of Spades Tech</span>
   </a>
   <button class="burger" id="burgerBtn" aria-label="Open menu" aria-expanded="false">
     <span></span><span></span><span></span>
@@ -53,7 +81,7 @@
       </svg>
     </button>
     <div class="lang-menu" id="langMenu">
-      <!-- RU скрыт: <button onclick="setLang('ru')" class="lang-option" data-lang="ru"><b>RU</b> <span>Русский</span></button> -->
+      <button onclick="setLang('ru')"    class="lang-option" data-lang="ru">   <b>RU</b> <span>Русский</span></button>
       <button onclick="setLang('en')"    class="lang-option" data-lang="en">   <b>EN</b> <span>English</span></button>
       <button onclick="setLang('en-gb')" class="lang-option" data-lang="en-gb"><b>GB</b> <span>British English</span></button>
       <button onclick="setLang('fr')"    class="lang-option" data-lang="fr">   <b>FR</b> <span>Français</span></button>
@@ -66,6 +94,7 @@
     </div>
   </div>
 </nav>
+<button class="menu-overlay" id="menuOverlay" type="button" aria-label="Close menu"></button>
 </header>
 
 <!-- ═══ MAIN CONTENT ═══ -->
@@ -73,10 +102,9 @@
 
 <!-- HERO -->
 <section id="hero" aria-label="Hero section">
-  <div class="hero-glow-bg"></div>
   <div class="container">
     <div class="hero-grid">
-      <!-- LEFT: text -->
+      <!-- Text left -->
       <div class="hero-left">
         <div class="hero-badge">
           <span class="dot"></span>
@@ -89,19 +117,24 @@
           We launch digital products in 4–12 weeks —<br>you focus on business, we handle the code.
         </p>
         <div class="hero-buttons">
-          <a href="#contact" class="btn-primary" data-i18n="btn_discuss">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M8 2l6 6-6 6" stroke="#000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Discuss a project
+          <a href="#contact" class="btn-primary">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M8 2l6 6-6 6" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span data-i18n="btn_discuss">Discuss a project</span>
           </a>
           <a href="#process" class="hero-link" data-i18n="btn_how">How we work ↓</a>
         </div>
       </div>
-      <!-- RIGHT: 3D cube -->
-      <div class="hero-visual">
-        <div class="hero-cube-wrap">
-          <canvas id="heroCanvas"></canvas>
-        </div>
+      <!-- 3D Gyroscope animation -->
+      <div class="hero-cube-wrap" id="hero-3d">
+        <canvas id="heroCanvas"></canvas>
       </div>
+    </div>
+    <div class="services-discovery">
+      <a href="/services/" class="service-inline-link">Explore all services</a>
+      <a href="/services/mvp-development/" class="service-inline-link">MVP development</a>
+      <a href="/services/saas-development/" class="service-inline-link">SaaS development</a>
+      <a href="/services/marketplace-development/" class="service-inline-link">Marketplace development</a>
+      <a href="/services/ai-integration/" class="service-inline-link">AI integration</a>
     </div>
   </div>
 </section>
@@ -150,64 +183,64 @@
     <div class="services-header">
       <div class="section-tag" data-i18n="sec_services_tag">What we do</div>
       <h2 class="section-title" data-i18n="sec_services_h">Full-cycle development</h2>
-      <p class="section-desc">From architecture to deployment. We specialize in products that scale and monetize.</p>
+      <p class="section-desc" data-i18n="sec_services_desc">From architecture to deployment. We specialize in products that scale and monetize.</p>
     </div>
     <div class="services-grid">
 
       <div class="service-card">
-        <div class="service-icon">⚡</div>
-        <div class="service-name">MVP in 4–8 weeks</div>
-        <div class="service-desc">Rapid creation of a minimum viable product with core features, data integration, and market testing. We launch without unnecessary costs — only what's needed to validate your hypothesis.</div>
-        <span class="service-tag">Time-to-market</span>
+        <div class="service-icon"><span class="icon icon-bolt"></span></div>
+        <div class="service-name" data-i18n="svc1_name">MVP in 4–8 weeks</div>
+        <div class="service-desc" data-i18n="svc1_desc">Rapid creation of a minimum viable product with core features, data integration, and market testing. We launch without unnecessary costs — only what's needed to validate your hypothesis.</div>
+        <span class="service-tag" data-i18n="svc1_tag">Time-to-market</span>
       </div>
 
       <div class="service-card">
-        <div class="service-icon">🏗️</div>
-        <div class="service-name">SaaS Platforms</div>
-        <div class="service-desc">Scalable platforms with subscriptions, secure data storage, and user analytics. Perfect for startups and small businesses with growth plans.</div>
-        <span class="service-tag">Scalable</span>
+        <div class="service-icon"><span class="icon icon-stack"></span></div>
+        <div class="service-name" data-i18n="svc2_name">SaaS Platforms</div>
+        <div class="service-desc" data-i18n="svc2_desc">Scalable platforms with subscriptions, secure data storage, and user analytics. Perfect for startups and small businesses with growth plans.</div>
+        <span class="service-tag" data-i18n="svc2_tag">Scalable</span>
       </div>
 
       <div class="service-card">
-        <div class="service-icon">🛒</div>
-        <div class="service-name">Marketplaces</div>
-        <div class="service-desc">Systems with product catalogs, online payments, reviews, and moderation. We connect sellers and buyers through reliable infrastructure.</div>
-        <span class="service-tag">B2B / B2C</span>
+        <div class="service-icon"><span class="icon icon-cart"></span></div>
+        <div class="service-name" data-i18n="svc3_name">Marketplaces</div>
+        <div class="service-desc" data-i18n="svc3_desc">Systems with product catalogs, online payments, reviews, and moderation. We connect sellers and buyers through reliable infrastructure.</div>
+        <span class="service-tag" data-i18n="svc3_tag">B2B / B2C</span>
       </div>
 
       <div class="service-card">
-        <div class="service-icon">🎛️</div>
-        <div class="service-name">Admin Panels & Dashboards</div>
-        <div class="service-desc">User-friendly interfaces for data management with flexible access roles, dashboards, and real-time analytics. Your team works more efficiently.</div>
-        <span class="service-tag">Role-based</span>
+        <div class="service-icon"><span class="icon icon-dashboard"></span></div>
+        <div class="service-name" data-i18n="svc4_name">Admin Panels & Dashboards</div>
+        <div class="service-desc" data-i18n="svc4_desc">User-friendly interfaces for data management with flexible access roles, dashboards, and real-time analytics. Your team works more efficiently.</div>
+        <span class="service-tag" data-i18n="svc4_tag">Role-based</span>
       </div>
 
       <div class="service-card">
-        <div class="service-icon">⚙️</div>
-        <div class="service-name">Automation</div>
-        <div class="service-desc">Scripts and systems that simplify routine tasks, integrate with existing tools, and save your team's time. Less manual work — more results.</div>
-        <span class="service-tag">No-ops</span>
+        <div class="service-icon"><span class="icon icon-gear"></span></div>
+        <div class="service-name" data-i18n="svc5_name">Automation</div>
+        <div class="service-desc" data-i18n="svc5_desc">Scripts and systems that simplify routine tasks, integrate with existing tools, and save your team's time. Less manual work — more results.</div>
+        <span class="service-tag" data-i18n="svc5_tag">No-ops</span>
       </div>
 
       <div class="service-card">
-        <div class="service-icon">🤖</div>
-        <div class="service-name" data-i18n="sec_ai_tag">AI Integrations</div>
-        <div class="service-desc">We add smart features: chatbots, data analysis, RAG systems, auto-classification. Your product becomes more competitive without rewriting from scratch.</div>
-        <span class="service-tag">AI-first</span>
+        <div class="service-icon"><span class="icon icon-bot"></span></div>
+        <div class="service-name" data-i18n="svc6_name">AI Integrations</div>
+        <div class="service-desc" data-i18n="svc6_desc">We add smart features: chatbots, data analysis, RAG systems, auto-classification. Your product becomes more competitive without rewriting from scratch.</div>
+        <span class="service-tag" data-i18n="svc6_tag">AI-first</span>
       </div>
 
     </div>
   </div>
 </section>
 
-<div class="container"><div class="glow-divider"></div></div>
+<div class="container"><div class="glow-divider" role="separator"></div></div>
 
 <!-- PROCESS -->
 <section id="process" aria-label="Work process">
   <div class="container">
-    <div class="section-tag" data-i18n="btn_how" data-i18n="sec_process_tag">How we work</div>
+    <div class="section-tag" data-i18n="sec_process_tag">How we work</div>
     <h2 class="section-title" data-i18n="sec_process_h">From idea to production</h2>
-    <p class="section-desc">Transparent process, predictable timelines. No surprises — just a working product.</p>
+    <p class="section-desc" data-i18n="sec_process_desc">Transparent process, predictable timelines. No surprises — just a working product.</p>
 
     <div class="process-grid">
       <div class="process-steps">
@@ -215,12 +248,12 @@
         <div class="process-step">
           <div class="step-num">01</div>
           <div class="step-content">
-            <div class="step-title">Discovery & User Stories</div>
-            <div class="step-desc">We dive into the idea, write user stories (what the user actually needs) and create an API-first design. Everything works smoothly through clear interfaces from day one.</div>
+            <div class="step-title" data-i18n="step1_title">Discovery & User Stories</div>
+            <div class="step-desc" data-i18n="step1_desc">We dive into the idea, write user stories (what the user actually needs) and create an API-first design. Everything works smoothly through clear interfaces from day one.</div>
             <div class="step-tags">
-              <span class="step-tag">User Stories</span>
-              <span class="step-tag">API-first</span>
-              <span class="step-tag">Figma</span>
+              <span class="step-tag" data-i18n="step1_tag1">User Stories</span>
+              <span class="step-tag" data-i18n="step1_tag2">API-first</span>
+              <span class="step-tag" data-i18n="step1_tag3">Figma</span>
             </div>
           </div>
         </div>
@@ -228,12 +261,12 @@
         <div class="process-step">
           <div class="step-num">02</div>
           <div class="step-content">
-            <div class="step-title">Architecture & Stack</div>
-            <div class="step-desc">We choose an approach where everything scales. Event-driven or microservices-ready — depending on your growth goals.</div>
+            <div class="step-title" data-i18n="step2_title">Architecture & Stack</div>
+            <div class="step-desc" data-i18n="step2_desc">We choose an approach where everything scales. Event-driven or microservices-ready — depending on your growth goals.</div>
             <div class="step-tags">
-              <span class="step-tag">Event-driven</span>
-              <span class="step-tag">Microservices</span>
-              <span class="step-tag">Cloud-native</span>
+              <span class="step-tag" data-i18n="step2_tag1">Event-driven</span>
+              <span class="step-tag" data-i18n="step2_tag2">Microservices</span>
+              <span class="step-tag" data-i18n="step2_tag3">Cloud-native</span>
             </div>
           </div>
         </div>
@@ -241,12 +274,12 @@
         <div class="process-step">
           <div class="step-num">03</div>
           <div class="step-content">
-            <div class="step-title">Sprint-based Development</div>
-            <div class="step-desc">Short 2-week iterations. Trunk-based development and feature flags — new features are toggled on without risking stability.</div>
+            <div class="step-title" data-i18n="step3_title">Sprint-based Development</div>
+            <div class="step-desc" data-i18n="step3_desc">Short 2-week iterations. Trunk-based development and feature flags — new features are toggled on without risking stability.</div>
             <div class="step-tags">
-              <span class="step-tag">2-week sprints</span>
-              <span class="step-tag">Feature flags</span>
-              <span class="step-tag">Trunk-based</span>
+              <span class="step-tag" data-i18n="step3_tag1">2-week sprints</span>
+              <span class="step-tag" data-i18n="step3_tag2">Feature flags</span>
+              <span class="step-tag" data-i18n="step3_tag3">Trunk-based</span>
             </div>
           </div>
         </div>
@@ -254,12 +287,12 @@
         <div class="process-step">
           <div class="step-num">04</div>
           <div class="step-content">
-            <div class="step-title">CI/CD & Security</div>
-            <div class="step-desc">Automatic updates with zero downtime from day one. OWASP Top 10 and dependency scanning — security is built in, not bolted on.</div>
+            <div class="step-title" data-i18n="step4_title">CI/CD & Security</div>
+            <div class="step-desc" data-i18n="step4_desc">Automatic updates with zero downtime from day one. OWASP Top 10 and dependency scanning — security is built in, not bolted on.</div>
             <div class="step-tags">
-              <span class="step-tag">Zero-downtime</span>
-              <span class="step-tag">OWASP</span>
-              <span class="step-tag">GitHub Actions</span>
+              <span class="step-tag" data-i18n="step4_tag1">Zero-downtime</span>
+              <span class="step-tag" data-i18n="step4_tag2">OWASP</span>
+              <span class="step-tag" data-i18n="step4_tag3">GitHub Actions</span>
             </div>
           </div>
         </div>
@@ -267,12 +300,12 @@
         <div class="process-step">
           <div class="step-num">05</div>
           <div class="step-content">
-            <div class="step-title">Launch & Handoff</div>
-            <div class="step-desc">Observability out of the box — OpenTelemetry + Prometheus/Grafana. You can see where bottlenecks are. Full handoff with documentation and team training.</div>
+            <div class="step-title" data-i18n="step5_title">Launch & Handoff</div>
+            <div class="step-desc" data-i18n="step5_desc">Observability out of the box — OpenTelemetry + Prometheus/Grafana. You can see where bottlenecks are. Full handoff with documentation and team training.</div>
             <div class="step-tags">
-              <span class="step-tag">OpenTelemetry</span>
-              <span class="step-tag">Grafana</span>
-              <span class="step-tag">Docs</span>
+              <span class="step-tag" data-i18n="step5_tag1">OpenTelemetry</span>
+              <span class="step-tag" data-i18n="step5_tag2">Grafana</span>
+              <span class="step-tag" data-i18n="step5_tag3">Docs</span>
             </div>
           </div>
         </div>
@@ -281,40 +314,40 @@
 
       <div class="process-right">
         <div class="process-card">
-          <div class="timeline-label">// Typical MVP timeline</div>
+          <div class="timeline-label" data-i18n="timeline_label">// Typical MVP timeline</div>
           <div class="timeline-items">
             <div class="timeline-item">
               <div class="timeline-week">Wk 1–2</div>
               <div>
-                <div class="timeline-phase">Discovery</div>
+                <div class="timeline-phase" data-i18n="timeline_phase1">Discovery</div>
                 <div class="timeline-bar"><div class="timeline-bar-fill" style="width:100%"></div></div>
               </div>
             </div>
             <div class="timeline-item">
               <div class="timeline-week">Wk 3–4</div>
               <div>
-                <div class="timeline-phase">Architecture & design</div>
+                <div class="timeline-phase" data-i18n="timeline_phase2">Architecture & design</div>
                 <div class="timeline-bar"><div class="timeline-bar-fill" style="width:100%"></div></div>
               </div>
             </div>
             <div class="timeline-item">
               <div class="timeline-week">Wk 5–8</div>
               <div>
-                <div class="timeline-phase">Development (sprints)</div>
+                <div class="timeline-phase" data-i18n="timeline_phase3">Development (sprints)</div>
                 <div class="timeline-bar"><div class="timeline-bar-fill" style="width:100%"></div></div>
               </div>
             </div>
             <div class="timeline-item">
               <div class="timeline-week">Wk 9</div>
               <div>
-                <div class="timeline-phase">QA & security</div>
+                <div class="timeline-phase" data-i18n="timeline_phase4">QA & security</div>
                 <div class="timeline-bar"><div class="timeline-bar-fill" style="width:100%"></div></div>
               </div>
             </div>
             <div class="timeline-item">
               <div class="timeline-week">Wk 10</div>
               <div>
-                <div class="timeline-phase">🚀 Launch</div>
+                <div class="timeline-phase" data-i18n="timeline_phase5">Launch</div>
                 <div class="timeline-bar"><div class="timeline-bar-fill" style="width:100%"></div></div>
               </div>
             </div>
@@ -325,7 +358,7 @@
   </div>
 </section>
 
-<div class="container"><div class="glow-divider"></div></div>
+<div class="container"><div class="glow-divider" role="separator"></div></div>
 
 <!-- STACK -->
 <section id="stack" aria-label="Technology stack">
@@ -333,12 +366,12 @@
     <div class="stack-header">
       <div class="section-tag" data-i18n="sec_stack_tag">Technology</div>
       <h2 class="section-title" data-i18n="sec_stack_h">Production-grade stack</h2>
-      <p class="section-desc">Battle-tested tools, no hype. Every choice is intentional.</p>
+      <p class="section-desc" data-i18n="sec_stack_desc">Battle-tested tools, no hype. Every choice is intentional.</p>
     </div>
 
     <div class="stack-categories">
       <div>
-        <div class="stack-category-title">Frontend</div>
+        <div class="stack-category-title" data-i18n="stack_cat1">Frontend</div>
         <div class="stack-items">
           <div class="stack-item">
             <svg viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="#40c4ff" stroke-width="1.2"/><path d="M9 5v8M5.5 7.5h7M5.5 10.5h7" stroke="#40c4ff" stroke-width="1.1"/></svg>
@@ -364,7 +397,7 @@
       </div>
 
       <div>
-        <div class="stack-category-title">Backend</div>
+        <div class="stack-category-title" data-i18n="stack_cat2">Backend</div>
         <div class="stack-items">
           <div class="stack-item">
             <svg viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="#68a063" stroke-width="1.2"/><path d="M6 9.5c0-1.5 1-3 3-3s3 1.5 3 3-1 3-3 3" stroke="#68a063" stroke-width="1.1"/></svg>
@@ -390,7 +423,7 @@
       </div>
 
       <div>
-        <div class="stack-category-title">Infrastructure & DevOps</div>
+        <div class="stack-category-title" data-i18n="stack_cat3">Infrastructure & DevOps</div>
         <div class="stack-items">
           <div class="stack-item">
             <svg viewBox="0 0 18 18" fill="none"><path d="M2 13l4-8 3 5 2-3 5 6H2z" stroke="#ff9900" stroke-width="1.2"/></svg>
@@ -416,7 +449,7 @@
       </div>
 
       <div>
-        <div class="stack-category-title">AI & ML</div>
+        <div class="stack-category-title" data-i18n="stack_cat4">AI & ML</div>
         <div class="stack-items">
           <div class="stack-item">
             <svg viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3" stroke="#10a37f" stroke-width="1.2"/><path d="M9 2v2M9 14v2M2 9h2M14 9h2M4.22 4.22l1.41 1.41M12.37 12.37l1.41 1.41M4.22 13.78l1.41-1.41M12.37 5.63l1.41-1.41" stroke="#10a37f" stroke-width="1.1"/></svg>
@@ -444,7 +477,7 @@
   </div>
 </section>
 
-<div class="container"><div class="glow-divider"></div></div>
+<div class="container"><div class="glow-divider" role="separator"></div></div>
 
 <!-- PROJECTS -->
 <section id="projects" aria-label="Case studies and projects">
@@ -452,73 +485,73 @@
     <div class="projects-header">
       <div class="section-tag" data-i18n="sec_projects_tag">Case studies</div>
       <h2 class="section-title" data-i18n="sec_projects_h">Real results</h2>
-      <p class="section-desc">Anonymous case studies from our clients. Real numbers, real timelines.</p>
+      <p class="section-desc" data-i18n="sec_projects_desc">Anonymous case studies from our clients. Real numbers, real timelines.</p>
     </div>
 
     <div class="projects-grid">
 
       <div class="project-card featured">
         <div>
-          <div class="project-type">B2B SaaS · Automation</div>
-          <div class="project-title">Operations management platform</div>
-          <div class="project-desc">CRM-like system for a B2B company with 50+ employees. Automation of routine tasks, ERP integration, real-time dashboards for managers. Full cycle: discovery → production.</div>
+          <div class="project-type" data-i18n="proj1_type">B2B SaaS · Automation</div>
+          <div class="project-title" data-i18n="proj1_title">Operations management platform</div>
+          <div class="project-desc" data-i18n="proj1_desc">CRM-like system for a B2B company with 50+ employees. Automation of routine tasks, ERP integration, real-time dashboards for managers. Full cycle: discovery → production.</div>
         </div>
         <div class="project-metrics">
           <div>
             <div class="metric-value">9</div>
-            <div class="metric-label">Weeks</div>
+            <div class="metric-label" data-i18n="metric_weeks">Weeks</div>
           </div>
           <div>
             <div class="metric-value">14<span>k€</span></div>
-            <div class="metric-label">Budget</div>
+            <div class="metric-label" data-i18n="metric_budget">Budget</div>
           </div>
           <div>
             <div class="metric-value">800<span>+</span></div>
-            <div class="metric-label">Users / 2 months</div>
+            <div class="metric-label" data-i18n="metric_users">Users / 2 months</div>
           </div>
           <div>
             <div class="metric-value">-60<span>%</span></div>
-            <div class="metric-label">Manual work</div>
+            <div class="metric-label" data-i18n="metric_manual">Manual work</div>
           </div>
         </div>
       </div>
 
       <div class="project-card">
-        <div class="project-type">Marketplace · B2C</div>
-        <div class="project-title">Professional services marketplace</div>
-        <div class="project-desc">A platform for freelancers and clients with built-in escrow, reviews, video presentations, and AI-powered talent matching on demand.</div>
+        <div class="project-type" data-i18n="proj2_type">Marketplace · B2C</div>
+        <div class="project-title" data-i18n="proj2_title">Professional services marketplace</div>
+        <div class="project-desc" data-i18n="proj2_desc">A platform for freelancers and clients with built-in escrow, reviews, video presentations, and AI-powered talent matching on demand.</div>
         <div class="project-metrics">
           <div>
             <div class="metric-value">11</div>
-            <div class="metric-label">Weeks</div>
+            <div class="metric-label" data-i18n="metric_weeks">Weeks</div>
           </div>
           <div>
             <div class="metric-value">1.2<span>k+</span></div>
-            <div class="metric-label">Signups in 1st month</div>
+            <div class="metric-label" data-i18n="metric_signups">Signups in 1st month</div>
           </div>
           <div>
-            <div class="metric-value">4.8<span>★</span></div>
-            <div class="metric-label">User rating</div>
+            <div class="metric-value">4.8</div>
+            <div class="metric-label" data-i18n="metric_rating">User rating</div>
           </div>
         </div>
       </div>
 
       <div class="project-card">
-        <div class="project-type">SaaS · EdTech</div>
-        <div class="project-title">LMS platform for corporate training</div>
-        <div class="project-desc">A learning management system with tests, certificates, progress analytics, and HR system integration. Multi-tenant architecture.</div>
+        <div class="project-type" data-i18n="proj3_type">SaaS · EdTech</div>
+        <div class="project-title" data-i18n="proj3_title">LMS platform for corporate training</div>
+        <div class="project-desc" data-i18n="proj3_desc">A learning management system with tests, certificates, progress analytics, and HR system integration. Multi-tenant architecture.</div>
         <div class="project-metrics">
           <div>
             <div class="metric-value">8</div>
-            <div class="metric-label">Weeks</div>
+            <div class="metric-label" data-i18n="metric_weeks">Weeks</div>
           </div>
           <div>
             <div class="metric-value">3</div>
-            <div class="metric-label">Enterprise clients</div>
+            <div class="metric-label" data-i18n="metric_clients">Enterprise clients</div>
           </div>
           <div>
             <div class="metric-value">500<span>+</span></div>
-            <div class="metric-label">Employees trained</div>
+            <div class="metric-label" data-i18n="metric_trained">Employees trained</div>
           </div>
         </div>
       </div>
@@ -527,43 +560,43 @@
   </div>
 </section>
 
-<div class="container"><div class="glow-divider"></div></div>
+<div class="container"><div class="glow-divider" role="separator"></div></div>
 
 <!-- AI -->
 <section id="ai" aria-label="AI integrations">
   <div class="container">
-    <div class="section-tag">AI integrations</div>
+    <div class="section-tag" data-i18n="sec_ai_tag">AI integrations</div>
     <h2 class="section-title" data-i18n="sec_ai_h">Smarter products, faster</h2>
-    <p class="section-desc">We don't rewrite your product from scratch. We embed AI where it delivers maximum impact.</p>
+    <p class="section-desc" data-i18n="sec_ai_desc">We don't rewrite your product from scratch. We embed AI where it delivers maximum impact.</p>
 
     <div class="ai-grid">
       <div class="ai-cards">
         <div class="ai-card">
-          <div class="ai-card-icon">🔍</div>
+          <div class="ai-card-icon"><span class="icon icon-search"></span></div>
           <div>
-            <div class="ai-card-title">RAG Systems</div>
-            <div class="ai-card-desc">Precise answers based on your data. A bot that knows your documentation, contracts, or knowledge base — without hallucinations.</div>
+            <div class="ai-card-title" data-i18n="ai1_title">RAG Systems</div>
+            <div class="ai-card-desc" data-i18n="ai1_desc">Precise answers based on your data. A bot that knows your documentation, contracts, or knowledge base — without hallucinations.</div>
           </div>
         </div>
         <div class="ai-card">
-          <div class="ai-card-icon">💬</div>
+          <div class="ai-card-icon"><span class="icon icon-chat"></span></div>
           <div>
-            <div class="ai-card-title">Custom Assistants</div>
-            <div class="ai-card-desc">Chatbots with your brand's personality, integrated into your product. Support, sales, onboarding — 24/7 without growing your team.</div>
+            <div class="ai-card-title" data-i18n="ai2_title">Custom Assistants</div>
+            <div class="ai-card-desc" data-i18n="ai2_desc">Chatbots with your brand's personality, integrated into your product. Support, sales, onboarding — 24/7 without growing your team.</div>
           </div>
         </div>
         <div class="ai-card">
-          <div class="ai-card-icon">🧠</div>
+          <div class="ai-card-icon"><span class="icon icon-brain"></span></div>
           <div>
-            <div class="ai-card-title">Fine-tuning LLM</div>
-            <div class="ai-card-desc">We fine-tune models on your data. Specialized AI for healthcare, legal, finance, or any other niche.</div>
+            <div class="ai-card-title" data-i18n="ai3_title">Fine-tuning LLM</div>
+            <div class="ai-card-desc" data-i18n="ai3_desc">We fine-tune models on your data. Specialized AI for healthcare, legal, finance, or any other niche.</div>
           </div>
         </div>
         <div class="ai-card">
-          <div class="ai-card-icon">🎙️</div>
+          <div class="ai-card-icon"><span class="icon icon-mic"></span></div>
           <div>
-            <div class="ai-card-title">Voice Interfaces</div>
-            <div class="ai-card-desc">Whisper + LLM + TTS — voice bots for call centers, search, and call automation. Works in 40+ languages.</div>
+            <div class="ai-card-title" data-i18n="ai4_title">Voice Interfaces</div>
+            <div class="ai-card-desc" data-i18n="ai4_desc">Whisper + LLM + TTS — voice bots for call centers, search, and call automation. Works in 40+ languages.</div>
           </div>
         </div>
       </div>
@@ -616,55 +649,50 @@
   </div>
 </section>
 
-<div class="container"><div class="glow-divider"></div></div>
+<div class="container"><div class="glow-divider" role="separator"></div></div>
 
 <!-- CONTACT -->
 <section id="contact" aria-label="Contact form">
   <div class="container">
     <div class="section-tag" data-i18n="sec_contact_tag">Contact</div>
     <h2 class="section-title" data-i18n="sec_contact_h">Let's talk about your project</h2>
-    <p class="section-desc">Free cost and timeline estimate within 24 hours. No obligations.</p>
+    <p class="section-desc" data-i18n="sec_contact_desc">Free cost and timeline estimate within 24 hours. No obligations.</p>
 
     <div class="contact-grid">
       <div class="contact-info">
-        <h3>Let's start with a conversation</h3>
-        <p>Tell us about your idea — and we'll estimate timelines, costs, and the technical side. The first consultation is free and comes with no obligations.</p>
-        <div class="contact-links">
-          <a href="/cdn-cgi/l/email-protection#f49c9198989bb48291989b8cda909182" class="contact-link">
-            <div class="contact-link-icon">✉️</div>
-            <span class="__cf_email__" data-cfemail="4b232e2727240b3d2e272433652f2e3d">[email&#160;protected]</span>
-          </a>
-          <a href="https://t.me/velox_dev" class="contact-link">
-            <div class="contact-link-icon">💬</div>
-            @velox_dev on Telegram
-          </a>
-        </div>
+        <h3 data-i18n="contact_subtitle">Let's start with a conversation</h3>
+        <p data-i18n="contact_text">Tell us about your idea — and we'll estimate timelines, costs, and the technical side. The first consultation is free and comes with no obligations.</p>
       </div>
 
-      <form class="contact-form" action="#" method="POST" novalidate aria-label="Request form">
+      <form class="contact-form" id="contactForm" action="/api/contact" method="POST" novalidate aria-label="Request form">
+        <div class="form-honeypot" aria-hidden="true">
+          <label class="form-label" for="f-company-website">Company website</label>
+          <input type="text" class="form-input" id="f-company-website" name="company_website" tabindex="-1" autocomplete="off">
+        </div>
         <div class="form-group">
-          <label class="form-label" for="f-type">Project type</label>
+          <label class="form-label" for="f-type" data-i18n="form_type_label">Project type</label>
           <select class="form-select" id="f-type" name="project_type" required>
-            <option value="">Select...</option>
+            <option value="" data-i18n="form_select_placeholder">Select...</option>
             <option value="mvp">MVP</option>
-            <option value="saas">SaaS Platform</option>
-            <option value="marketplace">Marketplace</option>
-            <option value="admin">Admin Panel</option>
-            <option value="automation">Automation</option>
-            <option value="ai">AI Integration</option>
-            <option value="other">Other</option>
+            <option value="saas" data-i18n="form_opt_saas">SaaS Platform</option>
+            <option value="marketplace" data-i18n="form_opt_marketplace">Marketplace</option>
+            <option value="admin" data-i18n="form_opt_admin">Admin Panel</option>
+            <option value="automation" data-i18n="form_opt_automation">Automation</option>
+            <option value="ai" data-i18n="form_opt_ai">AI Integration</option>
+            <option value="other" data-i18n="form_opt_other">Other</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label" for="f-desc">Project description</label>
-          <textarea class="form-textarea" id="f-desc" name="description" placeholder="Tell us about your idea, target audience, and key features..."></textarea>
+          <label class="form-label" for="f-desc" data-i18n="form_desc_label">Project description</label>
+          <textarea class="form-textarea" id="f-desc" name="description" data-i18n-placeholder="form_desc_placeholder" placeholder="Tell us about your idea, target audience, and key features..." minlength="10" required></textarea>
         </div>
         <div class="form-group">
-          <label class="form-label" for="f-contact">Contact (email or Telegram)</label>
-          <input type="text" class="form-input" id="f-contact" name="contact" placeholder="@username or email@example.com" required>
+          <label class="form-label" for="f-contact" data-i18n="form_contact_label">Email</label>
+          <input type="email" class="form-input" id="f-contact" name="contact" data-i18n-placeholder="form_contact_placeholder" placeholder="email@example.com" inputmode="email" autocomplete="email" required>
         </div>
         <button type="submit" class="form-submit" data-i18n="btn_submit">Get a free estimate →</button>
-        <div class="form-note" role="note">We respond within 24 hours · No spam · Full confidentiality</div>
+        <div class="form-status" id="formStatus" role="status" aria-live="polite"></div>
+        <div class="form-note" role="note" data-i18n="form_note">We respond within 24 hours · No spam · Full confidentiality</div>
       </form>
     </div>
   </div>
@@ -672,27 +700,45 @@
 
 </main>
 
+<section class="prefooter-contact" aria-label="Social links">
+  <div class="container">
+    <div class="prefooter-contact-inner">
+      <div class="contact-socials prefooter-socials" aria-label="Social links">
+        <a href="https://www.upwork.com/agencies/queenofspadestech" class="contact-social" target="_blank" rel="noopener noreferrer" aria-label="Queen of Spades Tech on Upwork">
+          <span class="icon icon-upwork"></span>
+          <span class="sr-only">Upwork</span>
+        </a>
+        <a href="https://x.com/AlisaNaryshkina" class="contact-social" target="_blank" rel="noopener noreferrer" aria-label="Alisa Naryshkina on X">
+          <span class="icon icon-x-social"></span>
+          <span class="sr-only">X</span>
+        </a>
+      </div>
+      <a href="mailto:hello@queenofspades.tech" class="contact-link prefooter-email">
+        <div class="contact-link-icon"><span class="icon icon-mail"></span></div>
+        hello@queenofspades.tech
+      </a>
+    </div>
+  </div>
+</section>
+
 <!-- ═══ FOOTER ═══ -->
 <footer role="contentinfo">
   <div class="container">
     <div class="footer-inner">
-      <div class="footer-copy"><span data-i18n="footer_copy">© 2026 VELOX. Digital product development.</span></div>
+      <div class="footer-copy"><span data-i18n="footer_copy">© 2026 Queen of Spades Tech. Digital product development.</span></div>
       <div class="footer-links">
-        <a href="#">Privacy Policy</a>
-        <a href="#">Terms</a>
-        <a href="/cdn-cgi/l/email-protection#cba3aea7a7a48bbdaea7a4b3e5afaebd"><span class="__cf_email__" data-cfemail="82eae7eeeeedc2f4e7eeedfaace6e7f4">[email&#160;protected]</span></a>
+        <a href="/services/">Services</a>
+        <a href="/privacy/">Privacy Policy</a>
+        <a href="/terms/">Terms</a>
+        <a href="/contact/">Contact</a>
       </div>
     </div>
   </div>
 </footer>
 
 <!-- ═══ SCRIPTS ═══ -->
-
-<!-- Three.js r128 (DO NOT update — API broken in r142+) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
-
-<!-- Application Scripts (cube + i18n + UI) -->
-<script src="script.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="script.js?v=24"></script>
 
 </body>
 </html>

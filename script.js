@@ -1,191 +1,183 @@
 /*
  * ═══════════════════════════════════════════════
- *  VELOX — Landing Page Scripts
+ *  Queen of Spades Tech — Landing Page Scripts
  * ═══════════════════════════════════════════════
- *  Module 1: 3D Cube Animation (Three.js r128)
+ *  Module 1: 3D Gyroscope animation (Three.js r128)
  *  Module 2: i18n (10 languages)
  *  Module 3: UI Interactions (lang dropdown)
  * ═══════════════════════════════════════════════
  */
 
-/* ═══ MODULE 1: 3D Cube Animation ═══ */
+/* ═══ MODULE 1: 3D Gyroscope — Armillary Sphere ═══ */
+(function () {
+  if (typeof THREE === 'undefined') return;
 
-(function() {
-  const canvas = document.getElementById('heroCanvas');
-  const W = 480, H = 480;
+  var container = document.getElementById('hero-3d');
+  var canvas = document.getElementById('heroCanvas');
+  if (!container || !canvas) return;
 
-  // ── Three.js scene ──────────────────────────────────────
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  renderer.setSize(W, H);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  // ─── CONFIG ───
+  var CONFIG = {
+    camera: { fov: 45, near: 0.1, far: 100, z: 10 },
+    lights: {
+      ambientIntensity: 1.2,
+      dir1Color: 0xeaf3ff, dir1Intensity: 3.0, dir1Position: { x: 5, y: 6, z: 7 },
+      dir2Color: 0x8aa8ff, dir2Intensity: 2.0, dir2Position: { x: -6, y: -3, z: 4 },
+      dir3Color: 0xffffff, dir3Intensity: 1.5, dir3Position: { x: 0, y: -5, z: 3 },
+      point1Color: 0xffffff, point1Intensity: 2.5, point1Distance: 50, point1Position: { x: 0, y: 2, z: 8 }
+    },
+    materials: {
+      metalLight: { color: 0xdce9ff, metalness: 1, roughness: 0.16 },
+      metalDark:  { color: 0x162131, metalness: 1, roughness: 0.20 }
+    },
+    rings: [
+      { radius: 2.60, width: 0.51, height: 0.20, material: 'dark',  initialRotation: { x: 0, y: 0, z: 0 },           gimbalAxis: [0, 1, 0],         gimbalSpeed: 0.3  },
+      { radius: 2.10, width: 0.33, height: 0.13, material: 'light', initialRotation: { x: 1.5708, y: 0, z: 0 },       gimbalAxis: [1, 0, 0],         gimbalSpeed: 0.25 },
+      { radius: 1.75, width: 0.24, height: 0.11, material: 'light', initialRotation: { x: 0.7854, y: 0.7854, z: 0 },  gimbalAxis: [0.707, 0.707, 0], gimbalSpeed: 0.2  },
+      { radius: 1.45, width: 0.29, height: 0.09, material: 'dark',  initialRotation: { x: 0, y: 0.7854, z: 1.0472 },  gimbalAxis: [0, 0.707, 0.707], gimbalSpeed: 0.35 },
+      { radius: 1.15, width: 0.20, height: 0.08, material: 'light', initialRotation: { x: 1.0472, y: 0, z: 0.7854 },  gimbalAxis: [0.707, 0, 0.707], gimbalSpeed: 0.25 }
+    ]
+  };
+
+  // ─── Scene / Camera / Renderer ───
+  var scene = new THREE.Scene();
+  // No scene.background → transparent (alpha: true)
+
+  var w = container.clientWidth;
+  var h = container.clientHeight;
+
+  var camera = new THREE.PerspectiveCamera(CONFIG.camera.fov, w / h, CONFIG.camera.near, CONFIG.camera.far);
+  camera.position.set(0, 0, CONFIG.camera.z);
+
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
   renderer.setClearColor(0x000000, 0);
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.setSize(w, h);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-  const scene = new THREE.Scene();
+  // ─── Lights ───
+  scene.add(new THREE.AmbientLight(0xffffff, CONFIG.lights.ambientIntensity));
 
-  const camera = new THREE.PerspectiveCamera(38, W / H, 0.1, 100);
-  camera.position.set(4.5, 3.2, 5.5);
-  camera.lookAt(0, 0, 0);
+  var dir1 = new THREE.DirectionalLight(CONFIG.lights.dir1Color, CONFIG.lights.dir1Intensity);
+  dir1.position.set(CONFIG.lights.dir1Position.x, CONFIG.lights.dir1Position.y, CONFIG.lights.dir1Position.z);
+  scene.add(dir1);
 
-  // ── Lighting ─────────────────────────────────────────────
-  // Very dim ambient — almost black
-  const ambient = new THREE.AmbientLight(0x0a0f14, 1.0);
-  scene.add(ambient);
+  var dir2 = new THREE.DirectionalLight(CONFIG.lights.dir2Color, CONFIG.lights.dir2Intensity);
+  dir2.position.set(CONFIG.lights.dir2Position.x, CONFIG.lights.dir2Position.y, CONFIG.lights.dir2Position.z);
+  scene.add(dir2);
 
-  // Key light: cold blue-white from top-left front
-  const keyLight = new THREE.DirectionalLight(0xc8e8ff, 1.6);
-  keyLight.position.set(-3, 6, 4);
-  keyLight.castShadow = true;
-  keyLight.shadow.mapSize.set(1024, 1024);
-  scene.add(keyLight);
+  var dir3 = new THREE.DirectionalLight(CONFIG.lights.dir3Color, CONFIG.lights.dir3Intensity);
+  dir3.position.set(CONFIG.lights.dir3Position.x, CONFIG.lights.dir3Position.y, CONFIG.lights.dir3Position.z);
+  scene.add(dir3);
 
-  // Rim light: very faint blue from behind-right
-  const rimLight = new THREE.DirectionalLight(0x40c4ff, 0.25);
-  rimLight.position.set(4, -1, -3);
-  scene.add(rimLight);
+  var point1 = new THREE.PointLight(CONFIG.lights.point1Color, CONFIG.lights.point1Intensity, CONFIG.lights.point1Distance);
+  point1.position.set(CONFIG.lights.point1Position.x, CONFIG.lights.point1Position.y, CONFIG.lights.point1Position.z);
+  scene.add(point1);
 
-  // Fill light: barely visible, warm-neutral from below
-  const fillLight = new THREE.DirectionalLight(0x111111, 0.4);
-  fillLight.position.set(2, -4, 2);
-  scene.add(fillLight);
+  // ─── Materials ───
+  var materialMetalLight = new THREE.MeshStandardMaterial(CONFIG.materials.metalLight);
+  var materialMetalDark  = new THREE.MeshStandardMaterial(CONFIG.materials.metalDark);
 
-  // ── Materials ─────────────────────────────────────────────
-  // Dark base: almost pure black with slight roughness variation
-  const matBase = new THREE.MeshStandardMaterial({
-    color: 0x0a0a0a,
-    roughness: 0.75,
-    metalness: 0.6,
-  });
-
-  // Slightly lighter face for top
-  const matTop = new THREE.MeshStandardMaterial({
-    color: 0x111418,
-    roughness: 0.55,
-    metalness: 0.7,
-  });
-
-  // Accent: very subtle blue tint for front face
-  const matFront = new THREE.MeshStandardMaterial({
-    color: 0x0c1018,
-    roughness: 0.6,
-    metalness: 0.65,
-  });
-
-  // Edge frame material - dark chrome
-  const matEdge = new THREE.MeshStandardMaterial({
-    color: 0x1a1a1a,
-    roughness: 0.3,
-    metalness: 0.9,
-  });
-
-  // ── Build 3×3×3 Rubik-style cube ─────────────────────────
-  const GRID = 3;
-  const CELL = 0.9;       // cell size
-  const GAP  = 0.04;      // gap between cells
-  const STEP = CELL + GAP;
-  const OFFSET = -STEP;   // center the 3×3×3 group
-
-  const cubeGroup = new THREE.Group();
-
-  // Per-face material assignment [+X, -X, +Y, -Y, +Z, -Z]
-  // We'll use matTop for +Y, matFront for +Z, matBase for rest
-  function makeFaceMaterials() {
-    return [
-      matBase.clone(),   // +X right
-      matBase.clone(),   // -X left
-      matTop.clone(),    // +Y top
-      matBase.clone(),   // -Y bottom
-      matFront.clone(),  // +Z front
-      matBase.clone(),   // -Z back
-    ];
-  }
-
-  for (let x = 0; x < GRID; x++) {
-    for (let y = 0; y < GRID; y++) {
-      for (let z = 0; z < GRID; z++) {
-        const geo = new THREE.BoxGeometry(CELL, CELL, CELL, 1, 1, 1);
-        const mats = makeFaceMaterials();
-
-        // Slightly vary roughness/metalness per cell for texture
-        mats.forEach(m => {
-          m.roughness  += (Math.random() - 0.5) * 0.12;
-          m.metalness  += (Math.random() - 0.5) * 0.10;
-          m.color.offsetHSL(0, 0, (Math.random() - 0.5) * 0.018);
-        });
-
-        const mesh = new THREE.Mesh(geo, mats);
-        mesh.position.set(
-          OFFSET + x * STEP,
-          OFFSET + y * STEP,
-          OFFSET + z * STEP
-        );
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-        cubeGroup.add(mesh);
-      }
+  // ─── Circle curve for rings (ES6 class — required by Three.js r128) ───
+  class CircleCurve extends THREE.Curve {
+    constructor(radius) {
+      super();
+      this.radius = radius;
+    }
+    getPoint(t) {
+      var a = t * Math.PI * 2;
+      return new THREE.Vector3(Math.cos(a) * this.radius, Math.sin(a) * this.radius, 0);
     }
   }
 
-  // ── Thin edge lines on the outer shell ───────────────────
-  const edgeGeo = new THREE.BoxGeometry(STEP * GRID, STEP * GRID, STEP * GRID);
-  const edgesGeo = new THREE.EdgesGeometry(edgeGeo);
-  const edgeMat = new THREE.LineBasicMaterial({
-    color: 0x1e2630,
-    transparent: true,
-    opacity: 0.6,
+  // ─── Helpers ───
+  function createRectShape(width, height, cornerRadius) {
+    var shape = new THREE.Shape();
+    var hw = width / 2, hh = height / 2;
+    var r = Math.min(cornerRadius || 0, hw, hh);
+    if (r <= 0) {
+      shape.moveTo(-hw, -hh); shape.lineTo(hw, -hh); shape.lineTo(hw, hh); shape.lineTo(-hw, hh); shape.lineTo(-hw, -hh);
+    } else {
+      shape.moveTo(-hw + r, -hh);
+      shape.lineTo(hw - r, -hh);  shape.quadraticCurveTo(hw, -hh, hw, -hh + r);
+      shape.lineTo(hw, hh - r);   shape.quadraticCurveTo(hw, hh, hw - r, hh);
+      shape.lineTo(-hw + r, hh);  shape.quadraticCurveTo(-hw, hh, -hw, hh - r);
+      shape.lineTo(-hw, -hh + r); shape.quadraticCurveTo(-hw, -hh, -hw + r, -hh);
+    }
+    return shape;
+  }
+
+  function createRectRing(radius, width, height, material, steps) {
+    var shape = createRectShape(width, height, 0.06);
+    var path = new CircleCurve(radius);
+    var geometry = new THREE.ExtrudeGeometry(shape, { steps: steps, bevelEnabled: false, extrudePath: path });
+    geometry.center();
+    return new THREE.Mesh(geometry, material);
+  }
+
+  // ─── Create rings ───
+  var isMobile = window.innerWidth < 768;
+  var ringSteps = isMobile ? 130 : 260;
+  var rings = [];
+
+  CONFIG.rings.forEach(function (cfg) {
+    var mat = cfg.material === 'dark' ? materialMetalDark : materialMetalLight;
+    var ring = createRectRing(cfg.radius, cfg.width, cfg.height, mat, ringSteps);
+    var axis = new THREE.Vector3(cfg.gimbalAxis[0], cfg.gimbalAxis[1], cfg.gimbalAxis[2]).normalize();
+    ring.rotation.set(cfg.initialRotation.x, cfg.initialRotation.y, cfg.initialRotation.z);
+    ring.userData = {
+      gimbalAxis: axis,
+      gimbalSpeed: cfg.gimbalSpeed,
+      initialQuaternion: ring.quaternion.clone()
+    };
+    scene.add(ring);
+    rings.push(ring);
   });
-  const edgeMesh = new THREE.LineSegments(edgesGeo, edgeMat);
-  cubeGroup.add(edgeMesh);
 
-  // ── Very faint glow plane (shadow/reflection) below cube ─
-  const planeGeo = new THREE.PlaneGeometry(8, 8);
-  const planeMat = new THREE.MeshBasicMaterial({
-    color: 0x000000,
-    transparent: true,
-    opacity: 0,
-  });
-  const plane = new THREE.Mesh(planeGeo, planeMat);
-  plane.rotation.x = -Math.PI / 2;
-  plane.position.y = -2.4;
-  plane.receiveShadow = true;
-  scene.add(plane);
+  // ─── Animation (seamless loop) ───
+  var clock = new THREE.Clock();
+  var LOOP_DURATION = 40 * Math.PI; // ~126 sec
+  var _gimbalQuat = new THREE.Quaternion();
+  var animationId = null;
+  var isVisible = true;
 
-  scene.add(cubeGroup);
-
-  // ── Initial rotation ──────────────────────────────────────
-  cubeGroup.rotation.x = 0.38;
-  cubeGroup.rotation.y = 0.62;
-
-  // ── Animation loop ────────────────────────────────────────
-  let t = 0;
   function animate() {
-    requestAnimationFrame(animate);
-    t += 0.004;
+    if (!isVisible) { animationId = null; return; }
+    animationId = requestAnimationFrame(animate);
 
-    // Slow primary rotation Y axis
-    cubeGroup.rotation.y += 0.003;
+    var t = clock.getElapsedTime();
+    var loopT = t % LOOP_DURATION;
 
-    // Very gentle breathing on X
-    cubeGroup.rotation.x = 0.38 + Math.sin(t * 0.4) * 0.04;
-
-    // Subtle float
-    cubeGroup.position.y = Math.sin(t * 0.5) * 0.06;
+    rings.forEach(function (ring) {
+      var angle = ring.userData.gimbalSpeed * loopT;
+      _gimbalQuat.setFromAxisAngle(ring.userData.gimbalAxis, angle);
+      ring.quaternion.copy(ring.userData.initialQuaternion).multiply(_gimbalQuat);
+    });
 
     renderer.render(scene, camera);
   }
+
+  // ─── IntersectionObserver — stop render off-screen ───
+  var visibilityObserver = new IntersectionObserver(function (entries) {
+    isVisible = entries[0].isIntersecting;
+    if (isVisible && !animationId) animate();
+  }, { threshold: 0.1 });
+  visibilityObserver.observe(container);
+
   animate();
 
-  // ── Resize handling ───────────────────────────────────────
-  window.addEventListener('resize', () => {
-    const wrap = canvas.parentElement;
-    if (!wrap) return;
-    const size = Math.min(wrap.clientWidth, wrap.clientHeight, 480);
-    renderer.setSize(size, size);
-    camera.aspect = 1;
+  // ─── ResizeObserver — adapt to container size ───
+  var resizeObserver = new ResizeObserver(function () {
+    var cw = container.clientWidth;
+    var ch = container.clientHeight;
+    if (cw === 0 || ch === 0) return;
+    camera.aspect = cw / ch;
     camera.updateProjectionMatrix();
+    renderer.setSize(cw, ch);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   });
+  resizeObserver.observe(container);
 })();
+
 /* ═══ MODULE 2: i18n — 10 languages ═══ */
 
 // ─── i18n: 10 languages ──────────────────────────────────
@@ -200,13 +192,45 @@ const TRANSLATIONS = {
     stat1:'Продуктов запущено', stat2:'Недель — средний MVP',
     stat3:'В рамках бюджета', stat4:'Недель до запуска',
     sec_services_tag:'Что мы делаем', sec_services_h:'Полный цикл разработки',
+    sec_services_desc:'От архитектуры до деплоя. Специализируемся на продуктах, которые масштабируются и монетизируются.',
+    svc1_name:'MVP за 4–8 недель', svc1_desc:'Быстрое создание минимального жизнеспособного продукта с основными функциями, интеграцией данных и тестированием на рынке. Запускаем без лишних затрат — только то, что нужно для проверки гипотезы.', svc1_tag:'Time-to-market',
+    svc2_name:'SaaS-платформы', svc2_desc:'Масштабируемые платформы с подписками, защищённым хранением данных и аналитикой пользователей. Идеально для стартапов и малого бизнеса с планами на рост.', svc2_tag:'Масштабируемо',
+    svc3_name:'Маркетплейсы', svc3_desc:'Системы с каталогами товаров, онлайн-платежами, отзывами и модерацией. Соединяем продавцов и покупателей через надёжную инфраструктуру.', svc3_tag:'B2B / B2C',
+    svc4_name:'Админ-панели и дашборды', svc4_desc:'Удобные интерфейсы для управления данными с гибкими ролями доступа, дашбордами и аналитикой в реальном времени. Ваша команда работает эффективнее.', svc4_tag:'Role-based',
+    svc5_name:'Автоматизация', svc5_desc:'Скрипты и системы, которые упрощают рутинные задачи, интегрируются с существующими инструментами и экономят время вашей команды. Меньше ручной работы — больше результатов.', svc5_tag:'No-ops',
+    svc6_name:'ИИ-интеграции', svc6_desc:'Добавляем умные функции: чат-боты, анализ данных, RAG-системы, автоклассификация. Ваш продукт становится конкурентнее без переписывания с нуля.', svc6_tag:'AI-first',
     sec_process_tag:'Как мы работаем', sec_process_h:'От идеи до production',
+    sec_process_desc:'Прозрачный процесс, предсказуемые сроки. Никаких сюрпризов — только рабочий продукт.',
+    step1_title:'Discovery и User Stories', step1_desc:'Погружаемся в идею, пишем пользовательские истории (что реально нужно юзеру) и создаём API-first дизайн. Всё работает слаженно через чёткие интерфейсы с первого дня.', step1_tag1:'User Stories', step1_tag2:'API-first', step1_tag3:'Figma',
+    step2_title:'Архитектура и стек', step2_desc:'Выбираем подход, где всё масштабируется. Event-driven или microservices-ready — зависит от ваших целей роста.', step2_tag1:'Event-driven', step2_tag2:'Микросервисы', step2_tag3:'Cloud-native',
+    step3_title:'Спринт-разработка', step3_desc:'Короткие 2-недельные итерации. Trunk-based разработка и feature flags — новые фичи включаются без риска для стабильности.', step3_tag1:'2-недельные спринты', step3_tag2:'Feature flags', step3_tag3:'Trunk-based',
+    step4_title:'CI/CD и безопасность', step4_desc:'Автоматические обновления с zero downtime с первого дня. OWASP Top 10 и сканирование зависимостей — безопасность встроена, а не прикручена.', step4_tag1:'Zero-downtime', step4_tag2:'OWASP', step4_tag3:'GitHub Actions',
+    step5_title:'Запуск и передача', step5_desc:'Observability из коробки — OpenTelemetry + Prometheus/Grafana. Вы видите, где узкие места. Полная передача с документацией и обучением команды.', step5_tag1:'OpenTelemetry', step5_tag2:'Grafana', step5_tag3:'Docs',
+    timeline_label:'// Типичный таймлайн MVP', timeline_phase1:'Исследование', timeline_phase2:'Архитектура и дизайн', timeline_phase3:'Разработка (спринты)', timeline_phase4:'QA и безопасность', timeline_phase5:'Запуск',
     sec_stack_tag:'Технологии', sec_stack_h:'Production-grade стек',
+    sec_stack_desc:'Проверенные инструменты, никакого хайпа. Каждый выбор осознан.',
+    stack_cat1:'Frontend', stack_cat2:'Backend', stack_cat3:'Инфраструктура и DevOps', stack_cat4:'AI & ML',
     sec_projects_tag:'Кейсы', sec_projects_h:'Реальные результаты',
+    sec_projects_desc:'Анонимные кейсы наших клиентов. Реальные цифры, реальные сроки.',
+    proj1_type:'B2B SaaS · Автоматизация', proj1_title:'Платформа для управления операциями', proj1_desc:'CRM-подобная система для B2B компании с 50+ сотрудниками. Автоматизация рутинных задач, интеграция с ERP, дашборды для менеджеров в реальном времени. Полный цикл: discovery → production.',
+    proj2_type:'Маркетплейс · B2C', proj2_title:'Маркетплейс профессиональных услуг', proj2_desc:'Платформа для фрилансеров и клиентов со встроенным эскроу, отзывами, видео-презентациями и AI-подбором талантов по запросу.',
+    proj3_type:'SaaS · EdTech', proj3_title:'LMS-платформа для корпоративного обучения', proj3_desc:'Система управления обучением с тестами, сертификатами, аналитикой прогресса и интеграцией с HR-системой. Мультитенантная архитектура.',
+    metric_weeks:'Недель', metric_budget:'Бюджет', metric_users:'Юзеров за 2 месяца', metric_manual:'Ручной работы',
+    metric_signups:'Регистраций за 1 мес', metric_rating:'Рейтинг юзеров', metric_clients:'Корп. клиентов', metric_trained:'Обучено сотрудников',
     sec_ai_tag:'ИИ-интеграции', sec_ai_h:'Умные продукты — быстрее',
+    sec_ai_desc:'Не переписываем ваш продукт с нуля. Встраиваем ИИ там, где он даёт максимум отдачи.',
+    ai1_title:'RAG-системы', ai1_desc:'Точные ответы на основе ваших данных. Бот, который знает вашу документацию, договоры или базу знаний — без галлюцинаций.',
+    ai2_title:'Кастомные ассистенты', ai2_desc:'Чат-боты с характером вашего бренда, встроенные в ваш продукт. Поддержка, продажи, онбординг — 24/7 без роста команды.',
+    ai3_title:'Fine-tuning LLM', ai3_desc:'Дотренируем модели на ваших данных. Специализированный ИИ для медицины, юриспруденции, финансов или любой другой ниши.',
+    ai4_title:'Голосовые интерфейсы', ai4_desc:'Whisper + LLM + TTS — голосовые боты для колл-центров, поиска и автоматизации звонков. Работает на 40+ языках.',
     sec_contact_tag:'Связаться', sec_contact_h:'Обсудим ваш проект',
+    sec_contact_desc:'Бесплатная оценка стоимости и сроков в течение 24 часов. Без обязательств.',
+    contact_subtitle:'Начнём с разговора', contact_text:'Расскажите о своей идее — и мы оценим сроки, стоимость и техническую сторону. Первая консультация бесплатна и ни к чему не обязывает.',
+    form_type_label:'Тип проекта', form_select_placeholder:'Выберите...', form_opt_saas:'SaaS-платформа', form_opt_marketplace:'Маркетплейс', form_opt_admin:'Админ-панель', form_opt_automation:'Автоматизация', form_opt_ai:'ИИ-интеграция', form_opt_other:'Другое',
+    form_desc_label:'Описание проекта', form_desc_placeholder:'Расскажите о вашей идее, целевой аудитории и ключевых функциях...', form_contact_label:'Email', form_contact_placeholder:'email@example.com',
+    form_note:'Отвечаем в течение 24 часов · Никакого спама · Полная конфиденциальность',
     btn_submit:'Получить бесплатный расчёт →',
-    footer_copy:'© 2026 VELOX. Разработка цифровых продуктов.',
+    footer_copy:'© 2026 Queen of Spades Tech. Разработка цифровых продуктов.',
     nav_services:'Услуги', nav_process:'Процесс', nav_stack:'Стек',
     nav_projects:'Проекты', nav_ai:'ИИ', nav_cta:'Обсудить проект',
   },
@@ -220,13 +244,45 @@ const TRANSLATIONS = {
     stat1:'Products launched', stat2:'Weeks — avg MVP',
     stat3:'On budget', stat4:'Weeks to launch',
     sec_services_tag:'What we do', sec_services_h:'Full-cycle development',
+    sec_services_desc:'From architecture to deployment. We specialize in products that scale and monetize.',
+    svc1_name:'MVP in 4–8 weeks', svc1_desc:'Rapid creation of a minimum viable product with core features, data integration, and market testing. We launch without unnecessary costs — only what\'s needed to validate your hypothesis.', svc1_tag:'Time-to-market',
+    svc2_name:'SaaS Platforms', svc2_desc:'Scalable platforms with subscriptions, secure data storage, and user analytics. Perfect for startups and small businesses with growth plans.', svc2_tag:'Scalable',
+    svc3_name:'Marketplaces', svc3_desc:'Systems with product catalogs, online payments, reviews, and moderation. We connect sellers and buyers through reliable infrastructure.', svc3_tag:'B2B / B2C',
+    svc4_name:'Admin Panels & Dashboards', svc4_desc:'User-friendly interfaces for data management with flexible access roles, dashboards, and real-time analytics. Your team works more efficiently.', svc4_tag:'Role-based',
+    svc5_name:'Automation', svc5_desc:'Scripts and systems that simplify routine tasks, integrate with existing tools, and save your team\'s time. Less manual work — more results.', svc5_tag:'No-ops',
+    svc6_name:'AI Integrations', svc6_desc:'We add smart features: chatbots, data analysis, RAG systems, auto-classification. Your product becomes more competitive without rewriting from scratch.', svc6_tag:'AI-first',
     sec_process_tag:'How we work', sec_process_h:'From idea to production',
+    sec_process_desc:'Transparent process, predictable timelines. No surprises — just a working product.',
+    step1_title:'Discovery & User Stories', step1_desc:'We dive into the idea, write user stories (what the user actually needs) and create an API-first design. Everything works smoothly through clear interfaces from day one.', step1_tag1:'User Stories', step1_tag2:'API-first', step1_tag3:'Figma',
+    step2_title:'Architecture & Stack', step2_desc:'We choose an approach where everything scales. Event-driven or microservices-ready — depending on your growth goals.', step2_tag1:'Event-driven', step2_tag2:'Microservices', step2_tag3:'Cloud-native',
+    step3_title:'Sprint-based Development', step3_desc:'Short 2-week iterations. Trunk-based development and feature flags — new features are toggled on without risking stability.', step3_tag1:'2-week sprints', step3_tag2:'Feature flags', step3_tag3:'Trunk-based',
+    step4_title:'CI/CD & Security', step4_desc:'Automatic updates with zero downtime from day one. OWASP Top 10 and dependency scanning — security is built in, not bolted on.', step4_tag1:'Zero-downtime', step4_tag2:'OWASP', step4_tag3:'GitHub Actions',
+    step5_title:'Launch & Handoff', step5_desc:'Observability out of the box — OpenTelemetry + Prometheus/Grafana. You can see where bottlenecks are. Full handoff with documentation and team training.', step5_tag1:'OpenTelemetry', step5_tag2:'Grafana', step5_tag3:'Docs',
+    timeline_label:'// Typical MVP timeline', timeline_phase1:'Discovery', timeline_phase2:'Architecture & design', timeline_phase3:'Development (sprints)', timeline_phase4:'QA & security', timeline_phase5:'Launch',
     sec_stack_tag:'Technology', sec_stack_h:'Production-grade stack',
+    sec_stack_desc:'Battle-tested tools, no hype. Every choice is intentional.',
+    stack_cat1:'Frontend', stack_cat2:'Backend', stack_cat3:'Infrastructure & DevOps', stack_cat4:'AI & ML',
     sec_projects_tag:'Case studies', sec_projects_h:'Real results',
+    sec_projects_desc:'Anonymous case studies from our clients. Real numbers, real timelines.',
+    proj1_type:'B2B SaaS · Automation', proj1_title:'Operations management platform', proj1_desc:'CRM-like system for a B2B company with 50+ employees. Automation of routine tasks, ERP integration, real-time dashboards for managers. Full cycle: discovery → production.',
+    proj2_type:'Marketplace · B2C', proj2_title:'Professional services marketplace', proj2_desc:'A platform for freelancers and clients with built-in escrow, reviews, video presentations, and AI-powered talent matching on demand.',
+    proj3_type:'SaaS · EdTech', proj3_title:'LMS platform for corporate training', proj3_desc:'A learning management system with tests, certificates, progress analytics, and HR system integration. Multi-tenant architecture.',
+    metric_weeks:'Weeks', metric_budget:'Budget', metric_users:'Users / 2 months', metric_manual:'Manual work',
+    metric_signups:'Signups in 1st month', metric_rating:'User rating', metric_clients:'Enterprise clients', metric_trained:'Employees trained',
     sec_ai_tag:'AI integrations', sec_ai_h:'Smarter products, faster',
-    sec_contact_tag:'Contact', sec_contact_h:'Let's talk about your project',
+    sec_ai_desc:'We don\'t rewrite your product from scratch. We embed AI where it delivers maximum impact.',
+    ai1_title:'RAG Systems', ai1_desc:'Precise answers based on your data. A bot that knows your documentation, contracts, or knowledge base — without hallucinations.',
+    ai2_title:'Custom Assistants', ai2_desc:'Chatbots with your brand\'s personality, integrated into your product. Support, sales, onboarding — 24/7 without growing your team.',
+    ai3_title:'Fine-tuning LLM', ai3_desc:'We fine-tune models on your data. Specialized AI for healthcare, legal, finance, or any other niche.',
+    ai4_title:'Voice Interfaces', ai4_desc:'Whisper + LLM + TTS — voice bots for call centers, search, and call automation. Works in 40+ languages.',
+    sec_contact_tag:'Contact', sec_contact_h:'Let\'s talk about your project',
+    sec_contact_desc:'Free cost and timeline estimate within 24 hours. No obligations.',
+    contact_subtitle:'Let\'s start with a conversation', contact_text:'Tell us about your idea — and we\'ll estimate timelines, costs, and the technical side. The first consultation is free and comes with no obligations.',
+    form_type_label:'Project type', form_select_placeholder:'Select...', form_opt_saas:'SaaS Platform', form_opt_marketplace:'Marketplace', form_opt_admin:'Admin Panel', form_opt_automation:'Automation', form_opt_ai:'AI Integration', form_opt_other:'Other',
+    form_desc_label:'Project description', form_desc_placeholder:'Tell us about your idea, target audience, and key features...', form_contact_label:'Email', form_contact_placeholder:'email@example.com',
+    form_note:'We respond within 24 hours · No spam · Full confidentiality',
     btn_submit:'Get a free estimate →',
-    footer_copy:'© 2026 VELOX. Digital product development.',
+    footer_copy:'© 2026 Queen of Spades Tech. Digital product development.',
     nav_services:'Services', nav_process:'Process', nav_stack:'Stack',
     nav_projects:'Projects', nav_ai:'AI', nav_cta:'Discuss a project',
   },
@@ -234,20 +290,51 @@ const TRANSLATIONS = {
     hero_badge:'Available for new projects',
     hero_title:'Building digital<br>products<br><span class="highlight">end-to-end</span>',
     hero_sub:'We launch digital products in 4–12 weeks —<br>you focus on business, we handle the code.',
-    
     btn_discuss:'Discuss a project',
     btn_how:'How we work ↓',
     trust_label:'Trusted by teams in',
     stat1:'Products launched', stat2:'Weeks — avg MVP',
     stat3:'On budget', stat4:'Weeks to launch',
     sec_services_tag:'What we do', sec_services_h:'Full-cycle development',
+    sec_services_desc:'From architecture to deployment. We specialise in products that scale and monetise.',
+    svc1_name:'MVP in 4–8 weeks', svc1_desc:'Rapid creation of a minimum viable product with core features, data integration, and market testing. We launch without unnecessary costs — only what\'s needed to validate your hypothesis.', svc1_tag:'Time-to-market',
+    svc2_name:'SaaS Platforms', svc2_desc:'Scalable platforms with subscriptions, secure data storage, and user analytics. Perfect for startups and small businesses with growth plans.', svc2_tag:'Scalable',
+    svc3_name:'Marketplaces', svc3_desc:'Systems with product catalogues, online payments, reviews, and moderation. We connect sellers and buyers through reliable infrastructure.', svc3_tag:'B2B / B2C',
+    svc4_name:'Admin Panels & Dashboards', svc4_desc:'User-friendly interfaces for data management with flexible access roles, dashboards, and real-time analytics. Your team works more efficiently.', svc4_tag:'Role-based',
+    svc5_name:'Automation', svc5_desc:'Scripts and systems that simplify routine tasks, integrate with existing tools, and save your team\'s time. Less manual work — more results.', svc5_tag:'No-ops',
+    svc6_name:'AI Integrations', svc6_desc:'We add smart features: chatbots, data analysis, RAG systems, auto-classification. Your product becomes more competitive without rewriting from scratch.', svc6_tag:'AI-first',
     sec_process_tag:'How we work', sec_process_h:'From idea to production',
+    sec_process_desc:'Transparent process, predictable timelines. No surprises — just a working product.',
+    step1_title:'Discovery & User Stories', step1_desc:'We dive into the idea, write user stories (what the user actually needs) and create an API-first design. Everything works smoothly through clear interfaces from day one.', step1_tag1:'User Stories', step1_tag2:'API-first', step1_tag3:'Figma',
+    step2_title:'Architecture & Stack', step2_desc:'We choose an approach where everything scales. Event-driven or microservices-ready — depending on your growth goals.', step2_tag1:'Event-driven', step2_tag2:'Microservices', step2_tag3:'Cloud-native',
+    step3_title:'Sprint-based Development', step3_desc:'Short 2-week iterations. Trunk-based development and feature flags — new features are toggled on without risking stability.', step3_tag1:'2-week sprints', step3_tag2:'Feature flags', step3_tag3:'Trunk-based',
+    step4_title:'CI/CD & Security', step4_desc:'Automatic updates with zero downtime from day one. OWASP Top 10 and dependency scanning — security is built in, not bolted on.', step4_tag1:'Zero-downtime', step4_tag2:'OWASP', step4_tag3:'GitHub Actions',
+    step5_title:'Launch & Handoff', step5_desc:'Observability out of the box — OpenTelemetry + Prometheus/Grafana. You can see where bottlenecks are. Full handoff with documentation and team training.', step5_tag1:'OpenTelemetry', step5_tag2:'Grafana', step5_tag3:'Docs',
+    timeline_label:'// Typical MVP timeline', timeline_phase1:'Discovery', timeline_phase2:'Architecture & design', timeline_phase3:'Development (sprints)', timeline_phase4:'QA & security', timeline_phase5:'Launch',
     sec_stack_tag:'Technology', sec_stack_h:'Production-grade stack',
+    sec_stack_desc:'Battle-tested tools, no hype. Every choice is intentional.',
+    stack_cat1:'Frontend', stack_cat2:'Backend', stack_cat3:'Infrastructure & DevOps', stack_cat4:'AI & ML',
     sec_projects_tag:'Case studies', sec_projects_h:'Real results',
+    sec_projects_desc:'Anonymous case studies from our clients. Real numbers, real timelines.',
+    proj1_type:'B2B SaaS · Automation', proj1_title:'Operations management platform', proj1_desc:'CRM-like system for a B2B company with 50+ employees. Automation of routine tasks, ERP integration, real-time dashboards for managers. Full cycle: discovery → production.',
+    proj2_type:'Marketplace · B2C', proj2_title:'Professional services marketplace', proj2_desc:'A platform for freelancers and clients with built-in escrow, reviews, video presentations, and AI-powered talent matching on demand.',
+    proj3_type:'SaaS · EdTech', proj3_title:'LMS platform for corporate training', proj3_desc:'A learning management system with tests, certificates, progress analytics, and HR system integration. Multi-tenant architecture.',
+    metric_weeks:'Weeks', metric_budget:'Budget', metric_users:'Users / 2 months', metric_manual:'Manual work',
+    metric_signups:'Signups in 1st month', metric_rating:'User rating', metric_clients:'Enterprise clients', metric_trained:'Employees trained',
     sec_ai_tag:'AI integrations', sec_ai_h:'Smarter products, faster',
-    sec_contact_tag:'Contact', sec_contact_h:'Let's discuss your project',
+    sec_ai_desc:'We don\'t rewrite your product from scratch. We embed AI where it delivers maximum impact.',
+    ai1_title:'RAG Systems', ai1_desc:'Precise answers based on your data. A bot that knows your documentation, contracts, or knowledge base — without hallucinations.',
+    ai2_title:'Custom Assistants', ai2_desc:'Chatbots with your brand\'s personality, integrated into your product. Support, sales, onboarding — 24/7 without growing your team.',
+    ai3_title:'Fine-tuning LLM', ai3_desc:'We fine-tune models on your data. Specialised AI for healthcare, legal, finance, or any other niche.',
+    ai4_title:'Voice Interfaces', ai4_desc:'Whisper + LLM + TTS — voice bots for call centres, search, and call automation. Works in 40+ languages.',
+    sec_contact_tag:'Contact', sec_contact_h:'Let\'s discuss your project',
+    sec_contact_desc:'Free cost and timeline estimate within 24 hours. No obligations.',
+    contact_subtitle:'Let\'s start with a conversation', contact_text:'Tell us about your idea — and we\'ll estimate timelines, costs, and the technical side. The first consultation is free and comes with no obligations.',
+    form_type_label:'Project type', form_select_placeholder:'Select...', form_opt_saas:'SaaS Platform', form_opt_marketplace:'Marketplace', form_opt_admin:'Admin Panel', form_opt_automation:'Automation', form_opt_ai:'AI Integration', form_opt_other:'Other',
+    form_desc_label:'Project description', form_desc_placeholder:'Tell us about your idea, target audience, and key features...', form_contact_label:'Email', form_contact_placeholder:'email@example.com',
+    form_note:'We respond within 24 hours · No spam · Full confidentiality',
     btn_submit:'Get a free quote →',
-    footer_copy:'© 2026 VELOX. Digital product development.',
+    footer_copy:'© 2026 Queen of Spades Tech. Digital product development.',
     nav_services:'Services', nav_process:'Process', nav_stack:'Stack',
     nav_projects:'Projects', nav_ai:'AI', nav_cta:'Discuss a project',
   },
@@ -255,20 +342,51 @@ const TRANSLATIONS = {
     hero_badge:'Disponibles pour de nouveaux projets',
     hero_title:'Développement de<br>produits<br><span class="highlight">numériques</span>',
     hero_sub:'Nous lançons des produits numériques en 4 à 12 semaines —<br>vous vous concentrez sur le business, nous sur le code.',
-    
     btn_discuss:'Discuter du projet',
     btn_how:'Notre méthode ↓',
     trust_label:'Des équipes nous font confiance dans',
     stat1:'Produits lancés', stat2:'Semaines — MVP moyen',
-    stat3:'Dans le budget', stat4:'Semaines jusqu'au lancement',
+    stat3:'Dans le budget', stat4:"Semaines jusqu'au lancement",
     sec_services_tag:'Ce que nous faisons', sec_services_h:'Développement complet',
-    sec_process_tag:'Notre méthode', sec_process_h:'De l'idée à la production',
+    sec_services_desc:'De l\'architecture au déploiement. Nous nous spécialisons dans les produits qui évoluent et se monétisent.',
+    svc1_name:'MVP en 4–8 semaines', svc1_desc:'Création rapide d\'un produit minimum viable avec fonctionnalités essentielles, intégration de données et test marché. Nous lançons sans coûts superflus — uniquement ce qui est nécessaire pour valider votre hypothèse.', svc1_tag:'Time-to-market',
+    svc2_name:'Plateformes SaaS', svc2_desc:'Plateformes évolutives avec abonnements, stockage sécurisé des données et analytique utilisateur. Parfait pour les startups et petites entreprises avec des plans de croissance.', svc2_tag:'Évolutif',
+    svc3_name:'Marketplaces', svc3_desc:'Systèmes avec catalogues produits, paiements en ligne, avis et modération. Nous connectons vendeurs et acheteurs via une infrastructure fiable.', svc3_tag:'B2B / B2C',
+    svc4_name:'Panneaux Admin & Dashboards', svc4_desc:'Interfaces conviviales pour la gestion des données avec rôles d\'accès flexibles, tableaux de bord et analytique en temps réel. Votre équipe travaille plus efficacement.', svc4_tag:'Basé sur les rôles',
+    svc5_name:'Automatisation', svc5_desc:'Scripts et systèmes qui simplifient les tâches routinières, s\'intègrent aux outils existants et économisent le temps de votre équipe. Moins de travail manuel — plus de résultats.', svc5_tag:'No-ops',
+    svc6_name:'Intégrations IA', svc6_desc:'Nous ajoutons des fonctionnalités intelligentes : chatbots, analyse de données, systèmes RAG, auto-classification. Votre produit devient plus compétitif sans réécriture complète.', svc6_tag:'IA d\'abord',
+    sec_process_tag:'Notre méthode', sec_process_h:"De l'idée à la production",
+    sec_process_desc:'Processus transparent, délais prévisibles. Pas de surprises — juste un produit fonctionnel.',
+    step1_title:'Discovery & User Stories', step1_desc:'Nous plongeons dans l\'idée, rédigeons des user stories (ce dont l\'utilisateur a réellement besoin) et créons un design API-first. Tout fonctionne harmonieusement via des interfaces claires dès le premier jour.', step1_tag1:'User Stories', step1_tag2:'API-first', step1_tag3:'Figma',
+    step2_title:'Architecture & Stack', step2_desc:'Nous choisissons une approche où tout évolue. Event-driven ou microservices-ready — selon vos objectifs de croissance.', step2_tag1:'Event-driven', step2_tag2:'Microservices', step2_tag3:'Cloud-native',
+    step3_title:'Développement par Sprints', step3_desc:'Itérations courtes de 2 semaines. Développement trunk-based et feature flags — les nouvelles fonctionnalités sont activées sans risque pour la stabilité.', step3_tag1:'Sprints de 2 semaines', step3_tag2:'Feature flags', step3_tag3:'Trunk-based',
+    step4_title:'CI/CD & Sécurité', step4_desc:'Mises à jour automatiques sans interruption dès le premier jour. OWASP Top 10 et analyse des dépendances — la sécurité est intégrée, pas ajoutée.', step4_tag1:'Zero-downtime', step4_tag2:'OWASP', step4_tag3:'GitHub Actions',
+    step5_title:'Lancement & Passation', step5_desc:'Observabilité prête à l\'emploi — OpenTelemetry + Prometheus/Grafana. Vous voyez où sont les goulots d\'étranglement. Passation complète avec documentation et formation de l\'équipe.', step5_tag1:'OpenTelemetry', step5_tag2:'Grafana', step5_tag3:'Docs',
+    timeline_label:'// Timeline MVP typique', timeline_phase1:'Discovery', timeline_phase2:'Architecture & design', timeline_phase3:'Développement (sprints)', timeline_phase4:'QA & sécurité', timeline_phase5:'Lancement',
     sec_stack_tag:'Technologies', sec_stack_h:'Stack production-grade',
+    sec_stack_desc:'Outils éprouvés, pas de hype. Chaque choix est intentionnel.',
+    stack_cat1:'Frontend', stack_cat2:'Backend', stack_cat3:'Infrastructure & DevOps', stack_cat4:'IA & ML',
     sec_projects_tag:'Études de cas', sec_projects_h:'Résultats concrets',
-    sec_ai_tag:'Intégrations IA', sec_ai_h:'Des produits plus intelligents',
+    sec_projects_desc:'Études de cas anonymes de nos clients. Vrais chiffres, vrais délais.',
+    proj1_type:'SaaS B2B · Automatisation', proj1_title:'Plateforme de gestion des opérations', proj1_desc:'Système type CRM pour entreprise B2B avec 50+ employés. Automatisation des tâches routinières, intégration ERP, dashboards temps réel pour managers. Cycle complet : discovery → production.',
+    proj2_type:'Marketplace · B2C', proj2_title:'Marketplace de services professionnels', proj2_desc:'Plateforme pour freelances et clients avec escrow intégré, avis, présentations vidéo et matching IA des talents à la demande.',
+    proj3_type:'SaaS · EdTech', proj3_title:'Plateforme LMS pour formation d\'entreprise', proj3_desc:'Système de gestion de l\'apprentissage avec tests, certificats, analytique de progression et intégration système RH. Architecture multi-tenant.',
+    metric_weeks:'Semaines', metric_budget:'Budget', metric_users:'Utilisateurs / 2 mois', metric_manual:'Travail manuel',
+    metric_signups:'Inscriptions 1er mois', metric_rating:'Note utilisateur', metric_clients:'Clients entreprise', metric_trained:'Employés formés',
+    sec_ai_tag:'Intégrations IA', sec_ai_h:'Des produits plus intelligents, plus vite',
+    sec_ai_desc:'Nous ne réécrivons pas votre produit de zéro. Nous intégrons l\'IA là où elle a le plus d\'impact.',
+    ai1_title:'Systèmes RAG', ai1_desc:'Réponses précises basées sur vos données. Un bot qui connaît votre documentation, contrats ou base de connaissances — sans hallucinations.',
+    ai2_title:'Assistants Personnalisés', ai2_desc:'Chatbots avec la personnalité de votre marque, intégrés à votre produit. Support, ventes, onboarding — 24/7 sans agrandir votre équipe.',
+    ai3_title:'Fine-tuning LLM', ai3_desc:'Nous affinons les modèles sur vos données. IA spécialisée pour santé, juridique, finance ou tout autre secteur.',
+    ai4_title:'Interfaces Vocales', ai4_desc:'Whisper + LLM + TTS — bots vocaux pour centres d\'appels, recherche et automatisation d\'appels. Fonctionne en 40+ langues.',
     sec_contact_tag:'Contact', sec_contact_h:'Parlons de votre projet',
+    sec_contact_desc:'Estimation gratuite des coûts et délais sous 24 heures. Sans engagement.',
+    contact_subtitle:'Commençons par une conversation', contact_text:'Parlez-nous de votre idée — nous estimerons les délais, coûts et l\'aspect technique. La première consultation est gratuite et sans engagement.',
+    form_type_label:'Type de projet', form_select_placeholder:'Sélectionner...', form_opt_saas:'Plateforme SaaS', form_opt_marketplace:'Marketplace', form_opt_admin:'Panneau Admin', form_opt_automation:'Automatisation', form_opt_ai:'Intégration IA', form_opt_other:'Autre',
+    form_desc_label:'Description du projet', form_desc_placeholder:'Parlez-nous de votre idée, public cible et fonctionnalités clés...', form_contact_label:'Email', form_contact_placeholder:'email@example.com',
+    form_note:'Nous répondons sous 24 heures · Pas de spam · Confidentialité totale',
     btn_submit:'Obtenir un devis gratuit →',
-    footer_copy:'© 2026 VELOX. Développement de produits numériques.',
+    footer_copy:'© 2026 Queen of Spades Tech. Développement de produits numériques.',
     nav_services:'Services', nav_process:'Processus', nav_stack:'Stack',
     nav_projects:'Projets', nav_ai:'IA', nav_cta:'Discuter du projet',
   },
@@ -276,20 +394,51 @@ const TRANSLATIONS = {
     hero_badge:'Offen für neue Projekte',
     hero_title:'Entwicklung digitaler<br><span class="highlight">Produkte</span><br>aus einer Hand',
     hero_sub:'Wir launchen digitale Produkte in 4–12 Wochen —<br>Sie konzentrieren sich aufs Business, wir auf den Code.',
-    
     btn_discuss:'Projekt besprechen',
     btn_how:'Unsere Methode ↓',
     trust_label:'Teams vertrauen uns aus',
     stat1:'Produkte gelauncht', stat2:'Wochen — Ø MVP',
     stat3:'Im Budget', stat4:'Wochen bis zum Launch',
     sec_services_tag:'Was wir tun', sec_services_h:'Vollständige Entwicklung',
+    sec_services_desc:'Von Architektur bis Deployment. Wir spezialisieren uns auf Produkte, die skalieren und monetarisieren.',
+    svc1_name:'MVP in 4–8 Wochen', svc1_desc:'Schnelle Erstellung eines minimal funktionsfähigen Produkts mit Kernfunktionen, Datenintegration und Markttests. Wir launchen ohne unnötige Kosten — nur das, was zur Validierung Ihrer Hypothese nötig ist.', svc1_tag:'Time-to-market',
+    svc2_name:'SaaS-Plattformen', svc2_desc:'Skalierbare Plattformen mit Abonnements, sicherer Datenspeicherung und Nutzeranalyse. Perfekt für Startups und kleine Unternehmen mit Wachstumsplänen.', svc2_tag:'Skalierbar',
+    svc3_name:'Marktplätze', svc3_desc:'Systeme mit Produktkatalogen, Online-Zahlungen, Bewertungen und Moderation. Wir verbinden Verkäufer und Käufer über zuverlässige Infrastruktur.', svc3_tag:'B2B / B2C',
+    svc4_name:'Admin-Panels & Dashboards', svc4_desc:'Benutzerfreundliche Interfaces zur Datenverwaltung mit flexiblen Zugriffsrollen, Dashboards und Echtzeit-Analytik. Ihr Team arbeitet effizienter.', svc4_tag:'Rollenbasiert',
+    svc5_name:'Automatisierung', svc5_desc:'Skripte und Systeme, die Routineaufgaben vereinfachen, sich in bestehende Tools integrieren und die Zeit Ihres Teams sparen. Weniger Handarbeit — mehr Ergebnisse.', svc5_tag:'No-ops',
+    svc6_name:'KI-Integrationen', svc6_desc:'Wir fügen intelligente Features hinzu: Chatbots, Datenanalyse, RAG-Systeme, Auto-Klassifizierung. Ihr Produkt wird wettbewerbsfähiger ohne komplette Neuentwicklung.', svc6_tag:'KI-first',
     sec_process_tag:'Unsere Methode', sec_process_h:'Von der Idee zur Produktion',
+    sec_process_desc:'Transparenter Prozess, vorhersehbare Zeitpläne. Keine Überraschungen — nur ein funktionierendes Produkt.',
+    step1_title:'Discovery & User Stories', step1_desc:'Wir tauchen in die Idee ein, schreiben User Stories (was der Nutzer wirklich braucht) und erstellen ein API-first Design. Alles funktioniert reibungslos über klare Schnittstellen vom ersten Tag an.', step1_tag1:'User Stories', step1_tag2:'API-first', step1_tag3:'Figma',
+    step2_title:'Architektur & Stack', step2_desc:'Wir wählen einen Ansatz, bei dem alles skaliert. Event-driven oder Microservices-ready — je nach Ihren Wachstumszielen.', step2_tag1:'Event-driven', step2_tag2:'Microservices', step2_tag3:'Cloud-native',
+    step3_title:'Sprint-basierte Entwicklung', step3_desc:'Kurze 2-Wochen-Iterationen. Trunk-based Development und Feature Flags — neue Features werden ohne Stabilitätsrisiko aktiviert.', step3_tag1:'2-Wochen-Sprints', step3_tag2:'Feature Flags', step3_tag3:'Trunk-based',
+    step4_title:'CI/CD & Sicherheit', step4_desc:'Automatische Updates ohne Ausfallzeiten vom ersten Tag an. OWASP Top 10 und Dependency-Scanning — Sicherheit ist eingebaut, nicht nachgerüstet.', step4_tag1:'Zero-downtime', step4_tag2:'OWASP', step4_tag3:'GitHub Actions',
+    step5_title:'Launch & Übergabe', step5_desc:'Observability aus der Box — OpenTelemetry + Prometheus/Grafana. Sie sehen, wo Engpässe sind. Vollständige Übergabe mit Dokumentation und Team-Training.', step5_tag1:'OpenTelemetry', step5_tag2:'Grafana', step5_tag3:'Docs',
+    timeline_label:'// Typische MVP-Timeline', timeline_phase1:'Discovery', timeline_phase2:'Architektur & Design', timeline_phase3:'Entwicklung (Sprints)', timeline_phase4:'QA & Sicherheit', timeline_phase5:'Launch',
     sec_stack_tag:'Technologien', sec_stack_h:'Production-grade Stack',
+    sec_stack_desc:'Bewährte Tools, kein Hype. Jede Wahl ist bewusst.',
+    stack_cat1:'Frontend', stack_cat2:'Backend', stack_cat3:'Infrastruktur & DevOps', stack_cat4:'KI & ML',
     sec_projects_tag:'Fallstudien', sec_projects_h:'Echte Ergebnisse',
+    sec_projects_desc:'Anonyme Fallstudien unserer Kunden. Echte Zahlen, echte Zeitpläne.',
+    proj1_type:'B2B SaaS · Automatisierung', proj1_title:'Operations-Management-Plattform', proj1_desc:'CRM-ähnliches System für B2B-Unternehmen mit 50+ Mitarbeitern. Automatisierung von Routineaufgaben, ERP-Integration, Echtzeit-Dashboards für Manager. Vollzyklus: Discovery → Produktion.',
+    proj2_type:'Marktplatz · B2C', proj2_title:'Marktplatz für professionelle Dienstleistungen', proj2_desc:'Plattform für Freelancer und Kunden mit integriertem Escrow, Bewertungen, Video-Präsentationen und KI-gestütztem Talent-Matching auf Abruf.',
+    proj3_type:'SaaS · EdTech', proj3_title:'LMS-Plattform für Unternehmensschulung', proj3_desc:'Learning-Management-System mit Tests, Zertifikaten, Fortschrittsanalyse und HR-System-Integration. Multi-Tenant-Architektur.',
+    metric_weeks:'Wochen', metric_budget:'Budget', metric_users:'Nutzer / 2 Monate', metric_manual:'Handarbeit',
+    metric_signups:'Anmeldungen 1. Monat', metric_rating:'Nutzerbewertung', metric_clients:'Enterprise-Kunden', metric_trained:'Geschulte Mitarbeiter',
     sec_ai_tag:'KI-Integrationen', sec_ai_h:'Klügere Produkte, schneller',
+    sec_ai_desc:'Wir schreiben Ihr Produkt nicht von Grund auf neu. Wir integrieren KI dort, wo sie maximale Wirkung erzielt.',
+    ai1_title:'RAG-Systeme', ai1_desc:'Präzise Antworten basierend auf Ihren Daten. Ein Bot, der Ihre Dokumentation, Verträge oder Wissensdatenbank kennt — ohne Halluzinationen.',
+    ai2_title:'Custom Assistants', ai2_desc:'Chatbots mit der Persönlichkeit Ihrer Marke, integriert in Ihr Produkt. Support, Vertrieb, Onboarding — 24/7 ohne Teamvergrößerung.',
+    ai3_title:'Fine-tuning LLM', ai3_desc:'Wir trainieren Modelle auf Ihren Daten. Spezialisierte KI für Gesundheitswesen, Recht, Finanzen oder jede andere Nische.',
+    ai4_title:'Sprachschnittstellen', ai4_desc:'Whisper + LLM + TTS — Sprachbots für Callcenter, Suche und Anrufautomatisierung. Funktioniert in 40+ Sprachen.',
     sec_contact_tag:'Kontakt', sec_contact_h:'Sprechen wir über Ihr Projekt',
+    sec_contact_desc:'Kostenlose Kosten- und Zeitschätzung innerhalb von 24 Stunden. Unverbindlich.',
+    contact_subtitle:'Beginnen wir mit einem Gespräch', contact_text:'Erzählen Sie uns von Ihrer Idee — und wir schätzen Zeitpläne, Kosten und die technische Seite. Die erste Beratung ist kostenlos und unverbindlich.',
+    form_type_label:'Projekttyp', form_select_placeholder:'Auswählen...', form_opt_saas:'SaaS-Plattform', form_opt_marketplace:'Marktplatz', form_opt_admin:'Admin-Panel', form_opt_automation:'Automatisierung', form_opt_ai:'KI-Integration', form_opt_other:'Sonstiges',
+    form_desc_label:'Projektbeschreibung', form_desc_placeholder:'Erzählen Sie uns von Ihrer Idee, Zielgruppe und Hauptfunktionen...', form_contact_label:'E-Mail', form_contact_placeholder:'email@example.com',
+    form_note:'Wir antworten innerhalb von 24 Stunden · Kein Spam · Volle Vertraulichkeit',
     btn_submit:'Kostenloses Angebot →',
-    footer_copy:'© 2026 VELOX. Digitale Produktentwicklung.',
+    footer_copy:'© 2026 Queen of Spades Tech. Digitale Produktentwicklung.',
     nav_services:'Leistungen', nav_process:'Prozess', nav_stack:'Stack',
     nav_projects:'Projekte', nav_ai:'KI', nav_cta:'Projekt besprechen',
   },
@@ -297,20 +446,51 @@ const TRANSLATIONS = {
     hero_badge:'Disponibles para nuevos proyectos',
     hero_title:'Desarrollo de<br>productos<br><span class="highlight">digitales</span>',
     hero_sub:'Lanzamos productos digitales en 4–12 semanas —<br>tú te enfocas en el negocio, nosotros en el código.',
-    
     btn_discuss:'Hablar del proyecto',
     btn_how:'Cómo trabajamos ↓',
     trust_label:'Equipos confían en nosotros de',
     stat1:'Productos lanzados', stat2:'Semanas — MVP promedio',
     stat3:'Dentro del presupuesto', stat4:'Semanas hasta el lanzamiento',
     sec_services_tag:'Qué hacemos', sec_services_h:'Desarrollo completo',
+    sec_services_desc:'De arquitectura a despliegue. Nos especializamos en productos que escalan y monetizan.',
+    svc1_name:'MVP en 4–8 semanas', svc1_desc:'Creación rápida de un producto mínimo viable con funciones clave, integración de datos y pruebas de mercado. Lanzamos sin costos innecesarios — solo lo necesario para validar tu hipótesis.', svc1_tag:'Time-to-market',
+    svc2_name:'Plataformas SaaS', svc2_desc:'Plataformas escalables con suscripciones, almacenamiento seguro de datos y análisis de usuarios. Perfecto para startups y pequeñas empresas con planes de crecimiento.', svc2_tag:'Escalable',
+    svc3_name:'Marketplaces', svc3_desc:'Sistemas con catálogos de productos, pagos online, reseñas y moderación. Conectamos vendedores y compradores a través de infraestructura confiable.', svc3_tag:'B2B / B2C',
+    svc4_name:'Paneles Admin & Dashboards', svc4_desc:'Interfaces amigables para gestión de datos con roles de acceso flexibles, dashboards y análisis en tiempo real. Tu equipo trabaja más eficientemente.', svc4_tag:'Basado en roles',
+    svc5_name:'Automatización', svc5_desc:'Scripts y sistemas que simplifican tareas rutinarias, se integran con herramientas existentes y ahorran tiempo a tu equipo. Menos trabajo manual — más resultados.', svc5_tag:'No-ops',
+    svc6_name:'Integraciones de IA', svc6_desc:'Agregamos características inteligentes: chatbots, análisis de datos, sistemas RAG, auto-clasificación. Tu producto se vuelve más competitivo sin reescribir desde cero.', svc6_tag:'IA primero',
     sec_process_tag:'Cómo trabajamos', sec_process_h:'De la idea a producción',
+    sec_process_desc:'Proceso transparente, plazos predecibles. Sin sorpresas — solo un producto funcional.',
+    step1_title:'Discovery & User Stories', step1_desc:'Nos sumergimos en la idea, escribimos historias de usuario (lo que el usuario realmente necesita) y creamos un diseño API-first. Todo funciona sin problemas a través de interfaces claras desde el primer día.', step1_tag1:'User Stories', step1_tag2:'API-first', step1_tag3:'Figma',
+    step2_title:'Arquitectura & Stack', step2_desc:'Elegimos un enfoque donde todo escala. Event-driven o microservices-ready — dependiendo de tus objetivos de crecimiento.', step2_tag1:'Event-driven', step2_tag2:'Microservicios', step2_tag3:'Cloud-native',
+    step3_title:'Desarrollo basado en Sprints', step3_desc:'Iteraciones cortas de 2 semanas. Desarrollo trunk-based y feature flags — nuevas características se activan sin arriesgar la estabilidad.', step3_tag1:'Sprints de 2 semanas', step3_tag2:'Feature flags', step3_tag3:'Trunk-based',
+    step4_title:'CI/CD & Seguridad', step4_desc:'Actualizaciones automáticas sin tiempo de inactividad desde el primer día. OWASP Top 10 y escaneo de dependencias — la seguridad está integrada, no añadida.', step4_tag1:'Zero-downtime', step4_tag2:'OWASP', step4_tag3:'GitHub Actions',
+    step5_title:'Lanzamiento & Traspaso', step5_desc:'Observabilidad lista para usar — OpenTelemetry + Prometheus/Grafana. Puedes ver dónde están los cuellos de botella. Traspaso completo con documentación y capacitación del equipo.', step5_tag1:'OpenTelemetry', step5_tag2:'Grafana', step5_tag3:'Docs',
+    timeline_label:'// Timeline típico de MVP', timeline_phase1:'Discovery', timeline_phase2:'Arquitectura y diseño', timeline_phase3:'Desarrollo (sprints)', timeline_phase4:'QA y seguridad', timeline_phase5:'Lanzamiento',
     sec_stack_tag:'Tecnologías', sec_stack_h:'Stack production-grade',
+    sec_stack_desc:'Herramientas probadas en batalla, sin hype. Cada elección es intencional.',
+    stack_cat1:'Frontend', stack_cat2:'Backend', stack_cat3:'Infraestructura & DevOps', stack_cat4:'IA & ML',
     sec_projects_tag:'Casos de éxito', sec_projects_h:'Resultados reales',
-    sec_ai_tag:'Integraciones de IA', sec_ai_h:'Productos más inteligentes',
+    sec_projects_desc:'Casos anónimos de nuestros clientes. Números reales, plazos reales.',
+    proj1_type:'SaaS B2B · Automatización', proj1_title:'Plataforma de gestión de operaciones', proj1_desc:'Sistema tipo CRM para empresa B2B con 50+ empleados. Automatización de tareas rutinarias, integración ERP, dashboards en tiempo real para gerentes. Ciclo completo: discovery → producción.',
+    proj2_type:'Marketplace · B2C', proj2_title:'Marketplace de servicios profesionales', proj2_desc:'Plataforma para freelancers y clientes con escrow integrado, reseñas, presentaciones de video y matching de talento impulsado por IA bajo demanda.',
+    proj3_type:'SaaS · EdTech', proj3_title:'Plataforma LMS para formación corporativa', proj3_desc:'Sistema de gestión del aprendizaje con pruebas, certificados, análisis de progreso e integración con sistema RH. Arquitectura multi-tenant.',
+    metric_weeks:'Semanas', metric_budget:'Presupuesto', metric_users:'Usuarios / 2 meses', metric_manual:'Trabajo manual',
+    metric_signups:'Registros 1er mes', metric_rating:'Calificación usuario', metric_clients:'Clientes empresa', metric_trained:'Empleados capacitados',
+    sec_ai_tag:'Integraciones de IA', sec_ai_h:'Productos más inteligentes, más rápido',
+    sec_ai_desc:'No reescribimos tu producto desde cero. Integramos IA donde genera máximo impacto.',
+    ai1_title:'Sistemas RAG', ai1_desc:'Respuestas precisas basadas en tus datos. Un bot que conoce tu documentación, contratos o base de conocimiento — sin alucinaciones.',
+    ai2_title:'Asistentes Personalizados', ai2_desc:'Chatbots con la personalidad de tu marca, integrados en tu producto. Soporte, ventas, onboarding — 24/7 sin hacer crecer tu equipo.',
+    ai3_title:'Fine-tuning LLM', ai3_desc:'Ajustamos modelos con tus datos. IA especializada para salud, legal, finanzas o cualquier otro nicho.',
+    ai4_title:'Interfaces de Voz', ai4_desc:'Whisper + LLM + TTS — bots de voz para call centers, búsqueda y automatización de llamadas. Funciona en 40+ idiomas.',
     sec_contact_tag:'Contacto', sec_contact_h:'Hablemos de tu proyecto',
+    sec_contact_desc:'Estimación gratuita de costo y plazos en 24 horas. Sin compromiso.',
+    contact_subtitle:'Empecemos con una conversación', contact_text:'Cuéntanos sobre tu idea — y estimaremos plazos, costos y el lado técnico. La primera consulta es gratuita y sin compromiso.',
+    form_type_label:'Tipo de proyecto', form_select_placeholder:'Seleccionar...', form_opt_saas:'Plataforma SaaS', form_opt_marketplace:'Marketplace', form_opt_admin:'Panel Admin', form_opt_automation:'Automatización', form_opt_ai:'Integración IA', form_opt_other:'Otro',
+    form_desc_label:'Descripción del proyecto', form_desc_placeholder:'Cuéntanos sobre tu idea, audiencia objetivo y características clave...', form_contact_label:'Email', form_contact_placeholder:'email@example.com',
+    form_note:'Respondemos en 24 horas · Sin spam · Confidencialidad total',
     btn_submit:'Obtener presupuesto gratuito →',
-    footer_copy:'© 2026 VELOX. Desarrollo de productos digitales.',
+    footer_copy:'© 2026 Queen of Spades Tech. Desarrollo de productos digitales.',
     nav_services:'Servicios', nav_process:'Proceso', nav_stack:'Stack',
     nav_projects:'Proyectos', nav_ai:'IA', nav_cta:'Hablar del proyecto',
   },
@@ -324,13 +504,45 @@ const TRANSLATIONS = {
     stat1:'Productes llançats', stat2:'Setmanes — MVP mitjà',
     stat3:'Dins el pressupost', stat4:'Setmanes fins al llançament',
     sec_services_tag:'Què fem', sec_services_h:'Desenvolupament complet',
+    sec_services_desc:'D\'arquitectura a desplegament. Ens especialitzem en productes que escalen i monetitzen.',
+    svc1_name:'MVP en 4–8 setmanes', svc1_desc:'Creació ràpida d\'un producte mínim viable amb funcions clau, integració de dades i proves de mercat. Llancem sense costos innecessaris — només el necessari per validar la teva hipòtesi.', svc1_tag:'Time-to-market',
+    svc2_name:'Plataformes SaaS', svc2_desc:'Plataformes escalables amb subscripcions, emmagatzematge segur de dades i anàlisi d\'usuaris. Perfecte per startups i petites empreses amb plans de creixement.', svc2_tag:'Escalable',
+    svc3_name:'Marketplaces', svc3_desc:'Sistemes amb catàlegs de productes, pagaments online, ressenyes i moderació. Connectem venedors i compradors a través d\'infraestructura fiable.', svc3_tag:'B2B / B2C',
+    svc4_name:'Panells Admin & Dashboards', svc4_desc:'Interfícies amigables per gestió de dades amb rols d\'accés flexibles, dashboards i anàlisi en temps real. El teu equip treballa més eficientment.', svc4_tag:'Basat en rols',
+    svc5_name:'Automatització', svc5_desc:'Scripts i sistemes que simplifiquen tasques rutinàries, s\'integren amb eines existents i estalvien temps al teu equip. Menys treball manual — més resultats.', svc5_tag:'No-ops',
+    svc6_name:'Integracions d\'IA', svc6_desc:'Afegim característiques intel·ligents: chatbots, anàlisi de dades, sistemes RAG, auto-classificació. El teu producte es torna més competitiu sense reescriure des de zero.', svc6_tag:'IA primer',
     sec_process_tag:'Com treballem', sec_process_h:'De la idea a producció',
+    sec_process_desc:'Procés transparent, terminis previsibles. Sense sorpreses — només un producte funcional.',
+    step1_title:'Discovery & User Stories', step1_desc:'Ens submergim en la idea, escrivim històries d\'usuari (el que l\'usuari realment necessita) i creem un disseny API-first. Tot funciona sense problemes a través d\'interfícies clares des del primer dia.', step1_tag1:'User Stories', step1_tag2:'API-first', step1_tag3:'Figma',
+    step2_title:'Arquitectura & Stack', step2_desc:'Triem un enfocament on tot escala. Event-driven o microservices-ready — depenent dels teus objectius de creixement.', step2_tag1:'Event-driven', step2_tag2:'Microserveis', step2_tag3:'Cloud-native',
+    step3_title:'Desenvolupament basat en Sprints', step3_desc:'Iteracions curtes de 2 setmanes. Desenvolupament trunk-based i feature flags — noves característiques s\'activen sense arriscar l\'estabilitat.', step3_tag1:'Sprints de 2 setmanes', step3_tag2:'Feature flags', step3_tag3:'Trunk-based',
+    step4_title:'CI/CD & Seguretat', step4_desc:'Actualitzacions automàtiques sense temps d\'inactivitat des del primer dia. OWASP Top 10 i escaneig de dependències — la seguretat està integrada, no afegida.', step4_tag1:'Zero-downtime', step4_tag2:'OWASP', step4_tag3:'GitHub Actions',
+    step5_title:'Llançament & Traspàs', step5_desc:'Observabilitat llesta per usar — OpenTelemetry + Prometheus/Grafana. Pots veure on estan els colls d\'ampolla. Traspàs complet amb documentació i capacitació de l\'equip.', step5_tag1:'OpenTelemetry', step5_tag2:'Grafana', step5_tag3:'Docs',
+    timeline_label:'// Timeline típic de MVP', timeline_phase1:'Discovery', timeline_phase2:'Arquitectura i disseny', timeline_phase3:'Desenvolupament (sprints)', timeline_phase4:'QA i seguretat', timeline_phase5:'Llançament',
     sec_stack_tag:'Tecnologies', sec_stack_h:'Stack production-grade',
-    sec_projects_tag:'Casos d'èxit', sec_projects_h:'Resultats reals',
-    sec_ai_tag:'Integracions d'IA', sec_ai_h:'Productes més intel·ligents',
+    sec_stack_desc:'Eines provades en batalla, sense hype. Cada elecció és intencional.',
+    stack_cat1:'Frontend', stack_cat2:'Backend', stack_cat3:'Infraestructura & DevOps', stack_cat4:'IA & ML',
+    sec_projects_tag:"Casos d'èxit", sec_projects_h:'Resultats reals',
+    sec_projects_desc:'Casos anònims dels nostres clients. Números reals, terminis reals.',
+    proj1_type:'SaaS B2B · Automatització', proj1_title:'Plataforma de gestió d\'operacions', proj1_desc:'Sistema tipus CRM per empresa B2B amb 50+ empleats. Automatització de tasques rutinàries, integració ERP, dashboards en temps real per gerents. Cicle complet: discovery → producció.',
+    proj2_type:'Marketplace · B2C', proj2_title:'Marketplace de serveis professionals', proj2_desc:'Plataforma per freelancers i clients amb escrow integrat, ressenyes, presentacions de vídeo i matching de talent impulsat per IA sota demanda.',
+    proj3_type:'SaaS · EdTech', proj3_title:'Plataforma LMS per formació corporativa', proj3_desc:'Sistema de gestió de l\'aprenentatge amb proves, certificats, anàlisi de progrés i integració amb sistema RH. Arquitectura multi-tenant.',
+    metric_weeks:'Setmanes', metric_budget:'Pressupost', metric_users:'Usuaris / 2 mesos', metric_manual:'Treball manual',
+    metric_signups:'Registres 1r mes', metric_rating:'Qualificació usuari', metric_clients:'Clients empresa', metric_trained:'Empleats capacitats',
+    sec_ai_tag:'Integracions d\'IA', sec_ai_h:'Productes més intel·ligents, més ràpid',
+    sec_ai_desc:'No reescrivim el teu producte des de zero. Integrem IA on genera màxim impacte.',
+    ai1_title:'Sistemes RAG', ai1_desc:'Respostes precises basades en les teves dades. Un bot que coneix la teva documentació, contractes o base de coneixement — sense al·lucinacions.',
+    ai2_title:'Assistents Personalitzats', ai2_desc:'Chatbots amb la personalitat de la teva marca, integrats en el teu producte. Suport, vendes, onboarding — 24/7 sense fer créixer el teu equip.',
+    ai3_title:'Fine-tuning LLM', ai3_desc:'Ajustem models amb les teves dades. IA especialitzada per salut, legal, finances o qualsevol altre nínxol.',
+    ai4_title:'Interfícies de Veu', ai4_desc:'Whisper + LLM + TTS — bots de veu per call centers, cerca i automatització de trucades. Funciona en 40+ idiomes.',
     sec_contact_tag:'Contacte', sec_contact_h:'Parlem del teu projecte',
+    sec_contact_desc:'Estimació gratuïta de cost i terminis en 24 hores. Sense compromís.',
+    contact_subtitle:'Comencem amb una conversa', contact_text:'Explica\'ns la teva idea — i estimarem terminis, costos i el costat tècnic. La primera consulta és gratuïta i sense compromís.',
+    form_type_label:'Tipus de projecte', form_select_placeholder:'Seleccionar...', form_opt_saas:'Plataforma SaaS', form_opt_marketplace:'Marketplace', form_opt_admin:'Panell Admin', form_opt_automation:'Automatització', form_opt_ai:'Integració IA', form_opt_other:'Altre',
+    form_desc_label:'Descripció del projecte', form_desc_placeholder:'Explica\'ns la teva idea, audiència objectiu i característiques clau...', form_contact_label:'Email', form_contact_placeholder:'email@example.com',
+    form_note:'Responem en 24 hores · Sense spam · Confidencialitat total',
     btn_submit:'Obtenir pressupost gratuït →',
-    footer_copy:'© 2026 VELOX. Desenvolupament de productes digitals.',
+    footer_copy:'© 2026 Queen of Spades Tech. Desenvolupament de productes digitals.',
     nav_services:'Serveis', nav_process:'Procés', nav_stack:'Stack',
     nav_projects:'Projectes', nav_ai:'IA', nav_cta:'Parlar del projecte',
   },
@@ -344,13 +556,45 @@ const TRANSLATIONS = {
     stat1:'Produktów uruchomionych', stat2:'Tygodnie — średnie MVP',
     stat3:'W budżecie', stat4:'Tygodnie do launchu',
     sec_services_tag:'Co robimy', sec_services_h:'Pełny cykl tworzenia',
+    sec_services_desc:'Od architektury do wdrożenia. Specjalizujemy się w produktach, które skalują się i monetyzują.',
+    svc1_name:'MVP w 4–8 tygodni', svc1_desc:'Szybkie stworzenie minimalnego produktu z kluczowymi funkcjami, integracją danych i testami rynkowymi. Uruchamiamy bez zbędnych kosztów — tylko to, co potrzebne do walidacji hipotezy.', svc1_tag:'Time-to-market',
+    svc2_name:'Platformy SaaS', svc2_desc:'Skalowalne platformy z subskrypcjami, bezpiecznym przechowywaniem danych i analizą użytkowników. Idealne dla startupów i małych firm z planami wzrostu.', svc2_tag:'Skalowalne',
+    svc3_name:'Marketplace', svc3_desc:'Systemy z katalogami produktów, płatnościami online, recenzjami i moderacją. Łączymy sprzedawców i kupujących przez niezawodną infrastrukturę.', svc3_tag:'B2B / B2C',
+    svc4_name:'Panele Admin i Dashboardy', svc4_desc:'Przyjazne interfejsy do zarządzania danymi z elastycznymi rolami dostępu, dashboardami i analizą w czasie rzeczywistym. Twój zespół pracuje efektywniej.', svc4_tag:'Oparte na rolach',
+    svc5_name:'Automatyzacja', svc5_desc:'Skrypty i systemy upraszczające rutynowe zadania, integrujące się z istniejącymi narzędziami i oszczędzające czas zespołu. Mniej pracy ręcznej — więcej wyników.', svc5_tag:'No-ops',
+    svc6_name:'Integracje AI', svc6_desc:'Dodajemy inteligentne funkcje: chatboty, analiza danych, systemy RAG, auto-klasyfikacja. Twój produkt staje się bardziej konkurencyjny bez przepisywania od zera.', svc6_tag:'AI-first',
     sec_process_tag:'Jak pracujemy', sec_process_h:'Od pomysłu do produkcji',
+    sec_process_desc:'Przejrzysty proces, przewidywalne terminy. Bez niespodzianek — tylko działający produkt.',
+    step1_title:'Discovery i User Stories', step1_desc:'Zagłębiamy się w pomysł, piszemy user stories (co użytkownik faktycznie potrzebuje) i tworzymy design API-first. Wszystko działa płynnie przez jasne interfejsy od pierwszego dnia.', step1_tag1:'User Stories', step1_tag2:'API-first', step1_tag3:'Figma',
+    step2_title:'Architektura i Stack', step2_desc:'Wybieramy podejście, w którym wszystko się skaluje. Event-driven lub microservices-ready — w zależności od celów wzrostu.', step2_tag1:'Event-driven', step2_tag2:'Mikroserwisy', step2_tag3:'Cloud-native',
+    step3_title:'Rozwój oparty na Sprintach', step3_desc:'Krótkie 2-tygodniowe iteracje. Rozwój trunk-based i feature flags — nowe funkcje włączane bez ryzyka utraty stabilności.', step3_tag1:'2-tygodniowe sprinty', step3_tag2:'Feature flags', step3_tag3:'Trunk-based',
+    step4_title:'CI/CD i Bezpieczeństwo', step4_desc:'Automatyczne aktualizacje bez przestojów od pierwszego dnia. OWASP Top 10 i skanowanie zależności — bezpieczeństwo wbudowane, nie doklejone.', step4_tag1:'Zero-downtime', step4_tag2:'OWASP', step4_tag3:'GitHub Actions',
+    step5_title:'Launch i Przekazanie', step5_desc:'Observability od razu — OpenTelemetry + Prometheus/Grafana. Widzisz, gdzie są wąskie gardła. Pełne przekazanie z dokumentacją i szkoleniem zespołu.', step5_tag1:'OpenTelemetry', step5_tag2:'Grafana', step5_tag3:'Docs',
+    timeline_label:'// Typowy timeline MVP', timeline_phase1:'Discovery', timeline_phase2:'Architektura i design', timeline_phase3:'Rozwój (sprinty)', timeline_phase4:'QA i bezpieczeństwo', timeline_phase5:'Launch',
     sec_stack_tag:'Technologie', sec_stack_h:'Stack klasy produkcyjnej',
+    sec_stack_desc:'Sprawdzone narzędzia, bez hype. Każdy wybór jest intencjonalny.',
+    stack_cat1:'Frontend', stack_cat2:'Backend', stack_cat3:'Infrastruktura i DevOps', stack_cat4:'AI & ML',
     sec_projects_tag:'Case study', sec_projects_h:'Realne wyniki',
-    sec_ai_tag:'Integracje AI', sec_ai_h:'Inteligentniejsze produkty',
+    sec_projects_desc:'Anonimowe case study naszych klientów. Prawdziwe liczby, prawdziwe terminy.',
+    proj1_type:'SaaS B2B · Automatyzacja', proj1_title:'Platforma zarządzania operacjami', proj1_desc:'System CRM-like dla firmy B2B z 50+ pracownikami. Automatyzacja rutynowych zadań, integracja ERP, dashboardy real-time dla menedżerów. Pełny cykl: discovery → produkcja.',
+    proj2_type:'Marketplace · B2C', proj2_title:'Marketplace usług profesjonalnych', proj2_desc:'Platforma dla freelancerów i klientów z wbudowanym escrow, recenzjami, prezentacjami wideo i dopasowaniem talentów AI na żądanie.',
+    proj3_type:'SaaS · EdTech', proj3_title:'Platforma LMS do szkoleń korporacyjnych', proj3_desc:'System zarządzania nauczaniem z testami, certyfikatami, analizą postępów i integracją z systemem HR. Architektura multi-tenant.',
+    metric_weeks:'Tygodni', metric_budget:'Budżet', metric_users:'Użytkowników / 2 miesiące', metric_manual:'Pracy ręcznej',
+    metric_signups:'Rejestracji 1. miesiąc', metric_rating:'Ocena użytkowników', metric_clients:'Klientów enterprise', metric_trained:'Przeszkolonych pracowników',
+    sec_ai_tag:'Integracje AI', sec_ai_h:'Inteligentniejsze produkty, szybciej',
+    sec_ai_desc:'Nie przepisujemy produktu od zera. Osadzamy AI tam, gdzie daje maksymalny efekt.',
+    ai1_title:'Systemy RAG', ai1_desc:'Precyzyjne odpowiedzi oparte na Twoich danych. Bot, który zna Twoją dokumentację, kontrakty lub bazę wiedzy — bez halucynacji.',
+    ai2_title:'Niestandardowi Asystenci', ai2_desc:'Chatboty z osobowością Twojej marki, zintegrowane z produktem. Wsparcie, sprzedaż, onboarding — 24/7 bez powiększania zespołu.',
+    ai3_title:'Fine-tuning LLM', ai3_desc:'Dostrajamy modele na Twoich danych. Wyspecjalizowane AI dla zdrowia, prawnego, finansów lub innej niszy.',
+    ai4_title:'Interfejsy Głosowe', ai4_desc:'Whisper + LLM + TTS — boty głosowe dla call center, wyszukiwania i automatyzacji połączeń. Działa w 40+ językach.',
     sec_contact_tag:'Kontakt', sec_contact_h:'Porozmawiajmy o Twoim projekcie',
+    sec_contact_desc:'Bezpłatna wycena kosztów i terminów w 24 godziny. Bez zobowiązań.',
+    contact_subtitle:'Zacznijmy od rozmowy', contact_text:'Opowiedz nam o pomyśle — oszacujemy terminy, koszty i stronę techniczną. Pierwsza konsultacja jest bezpłatna i bez zobowiązań.',
+    form_type_label:'Typ projektu', form_select_placeholder:'Wybierz...', form_opt_saas:'Platforma SaaS', form_opt_marketplace:'Marketplace', form_opt_admin:'Panel Admin', form_opt_automation:'Automatyzacja', form_opt_ai:'Integracja AI', form_opt_other:'Inne',
+    form_desc_label:'Opis projektu', form_desc_placeholder:'Opowiedz o pomyśle, grupie docelowej i kluczowych funkcjach...', form_contact_label:'Email', form_contact_placeholder:'email@example.com',
+    form_note:'Odpowiadamy w 24 godziny · Bez spamu · Pełna poufność',
     btn_submit:'Bezpłatna wycena →',
-    footer_copy:'© 2026 VELOX. Tworzenie produktów cyfrowych.',
+    footer_copy:'© 2026 Queen of Spades Tech. Tworzenie produktów cyfrowych.',
     nav_services:'Usługi', nav_process:'Proces', nav_stack:'Stack',
     nav_projects:'Projekty', nav_ai:'AI', nav_cta:'Porozmawiaj o projekcie',
   },
@@ -364,19 +608,51 @@ const TRANSLATIONS = {
     stat1:'منتجاً تم إطلاقه', stat2:'أسابيع متوسط MVP',
     stat3:'ضمن الميزانية', stat4:'أسابيع حتى الإطلاق',
     sec_services_tag:'ما نفعله', sec_services_h:'تطوير متكامل',
+    sec_services_desc:'من البنية المعمارية إلى النشر. نتخصص في منتجات قابلة للتوسع والتحقيق الربحية.',
+    svc1_name:'MVP في 4–8 أسابيع', svc1_desc:'إنشاء سريع لمنتج قابل للاستخدام الأدنى مع الميزات الأساسية وتكامل البيانات واختبار السوق. نطلق بدون تكاليف غير ضرورية — فقط ما يلزم للتحقق من فرضيتك.', svc1_tag:'سرعة الوصول للسوق',
+    svc2_name:'منصات SaaS', svc2_desc:'منصات قابلة للتوسع مع اشتراكات وتخزين آمن للبيانات وتحليلات المستخدمين. مثالية للشركات الناشئة والشركات الصغيرة ذات خطط النمو.', svc2_tag:'قابل للتوسع',
+    svc3_name:'الأسواق الإلكترونية', svc3_desc:'أنظمة مع كتالوجات المنتجات والمدفوعات عبر الإنترنت والمراجعات والإشراف. نربط البائعين والمشترين عبر بنية تحتية موثوقة.', svc3_tag:'B2B / B2C',
+    svc4_name:'لوحات الإدارة ولوحات المعلومات', svc4_desc:'واجهات سهلة الاستخدام لإدارة البيانات مع أدوار وصول مرنة ولوحات معلومات وتحليلات فورية. فريقك يعمل بكفاءة أكبر.', svc4_tag:'قائم على الأدوار',
+    svc5_name:'الأتمتة', svc5_desc:'نصوص برمجية وأنظمة تبسط المهام الروتينية وتتكامل مع الأدوات الحالية وتوفر وقت فريقك. عمل يدوي أقل — نتائج أكثر.', svc5_tag:'لا عمليات',
+    svc6_name:'تكاملات الذكاء الاصطناعي', svc6_desc:'نضيف ميزات ذكية: روبوتات الدردشة وتحليل البيانات وأنظمة RAG والتصنيف التلقائي. منتجك يصبح أكثر تنافسية دون إعادة الكتابة من الصفر.', svc6_tag:'الذكاء الاصطناعي أولاً',
     sec_process_tag:'كيف نعمل', sec_process_h:'من الفكرة إلى الإنتاج',
+    sec_process_desc:'عملية شفافة، جداول زمنية متوقعة. لا مفاجآت — فقط منتج يعمل.',
+    step1_title:'الاكتشاف وقصص المستخدمين', step1_desc:'نغوص في الفكرة ونكتب قصص المستخدمين (ما يحتاجه المستخدم فعلاً) ونصمم تصميماً قائماً على API أولاً. كل شيء يعمل بسلاسة من خلال واجهات واضحة من اليوم الأول.', step1_tag1:'قصص المستخدمين', step1_tag2:'API أولاً', step1_tag3:'Figma',
+    step2_title:'البنية المعمارية والتقنيات', step2_desc:'نختار نهجاً حيث كل شيء قابل للتوسع. قائم على الأحداث أو جاهز للخدمات الصغيرة — بناءً على أهداف نموك.', step2_tag1:'قائم على الأحداث', step2_tag2:'الخدمات الصغيرة', step2_tag3:'سحابي أصلي',
+    step3_title:'تطوير قائم على السبرينت', step3_desc:'دورات قصيرة من أسبوعين. تطوير قائم على الجذع وأعلام الميزات — الميزات الجديدة يتم تفعيلها دون المخاطرة بالاستقرار.', step3_tag1:'سبرينتات أسبوعين', step3_tag2:'أعلام الميزات', step3_tag3:'قائم على الجذع',
+    step4_title:'CI/CD والأمان', step4_desc:'تحديثات تلقائية بدون توقف من اليوم الأول. OWASP Top 10 ومسح التبعيات — الأمان مدمج وليس مضافاً.', step4_tag1:'بدون توقف', step4_tag2:'OWASP', step4_tag3:'GitHub Actions',
+    step5_title:'الإطلاق والتسليم', step5_desc:'قابلية المراقبة جاهزة — OpenTelemetry + Prometheus/Grafana. يمكنك رؤية أين تكمن الاختناقات. تسليم كامل مع وثائق وتدريب للفريق.', step5_tag1:'OpenTelemetry', step5_tag2:'Grafana', step5_tag3:'الوثائق',
+    timeline_label:'// الجدول الزمني النموذجي لـ MVP', timeline_phase1:'الاكتشاف', timeline_phase2:'البنية المعمارية والتصميم', timeline_phase3:'التطوير (سبرينتات)', timeline_phase4:'ضمان الجودة والأمان', timeline_phase5:'الإطلاق',
     sec_stack_tag:'التقنيات', sec_stack_h:'Stack للإنتاج',
+    sec_stack_desc:'أدوات مختبرة في المعركة، لا دعاية. كل اختيار مقصود.',
+    stack_cat1:'الواجهة الأمامية', stack_cat2:'الخلفية', stack_cat3:'البنية التحتية وDevOps', stack_cat4:'الذكاء الاصطناعي والتعلم الآلي',
     sec_projects_tag:'دراسات الحالة', sec_projects_h:'نتائج حقيقية',
-    sec_ai_tag:'تكاملات الذكاء الاصطناعي', sec_ai_h:'منتجات أذكى وأسرع',
-    sec_contact_tag:'تواصل معنا', sec_contact_h:'تحدث عن مشروعك',
+    sec_projects_desc:'دراسات حالة مجهولة من عملائنا. أرقام حقيقية، جداول زمنية حقيقية.',
+    proj1_type:'SaaS B2B · أتمتة', proj1_title:'منصة إدارة العمليات', proj1_desc:'نظام شبيه بـ CRM لشركة B2B مع 50+ موظف. أتمتة المهام الروتينية، تكامل ERP، لوحات معلومات فورية للمديرين. دورة كاملة: الاكتشاف → الإنتاج.',
+    proj2_type:'سوق إلكتروني · B2C', proj2_title:'سوق الخدمات المهنية', proj2_desc:'منصة للمستقلين والعملاء مع ضمان مدمج ومراجعات وعروض فيديو ومطابقة مواهب مدعومة بالذكاء الاصطناعي عند الطلب.',
+    proj3_type:'SaaS · EdTech', proj3_title:'منصة LMS للتدريب الشركات', proj3_desc:'نظام إدارة التعلم مع اختبارات وشهادات وتحليلات التقدم وتكامل نظام الموارد البشرية. بنية متعددة المستأجرين.',
+    metric_weeks:'أسابيع', metric_budget:'الميزانية', metric_users:'مستخدمين / شهرين', metric_manual:'العمل اليدوي',
+    metric_signups:'تسجيلات الشهر الأول', metric_rating:'تقييم المستخدم', metric_clients:'عملاء الشركات', metric_trained:'موظفين مدربين',
+    sec_ai_tag:'تكاملات الذكاء الاصطناعي', sec_ai_h:'منتجات أذكى، بشكل أسرع',
+    sec_ai_desc:'لا نعيد كتابة منتجك من الصفر. نضمن الذكاء الاصطناعي حيث يحقق أقصى تأثير.',
+    ai1_title:'أنظمة RAG', ai1_desc:'إجابات دقيقة بناءً على بياناتك. روبوت يعرف وثائقك أو عقودك أو قاعدة معرفتك — بدون هلوسة.',
+    ai2_title:'مساعدون مخصصون', ai2_desc:'روبوتات دردشة بشخصية علامتك التجارية، مدمجة في منتجك. الدعم، المبيعات، الإعداد — 24/7 دون تكبير فريقك.',
+    ai3_title:'ضبط دقيق لـ LLM', ai3_desc:'نقوم بضبط النماذج بناءً على بياناتك. ذكاء اصطناعي متخصص للرعاية الصحية أو القانونية أو المالية أو أي تخصص آخر.',
+    ai4_title:'واجهات صوتية', ai4_desc:'Whisper + LLM + TTS — روبوتات صوتية لمراكز الاتصال والبحث وأتمتة المكالمات. يعمل بأكثر من 40 لغة.',
+    sec_contact_tag:'تواصل معنا', sec_contact_h:'لنتحدث عن مشروعك',
+    sec_contact_desc:'تقدير مجاني للتكلفة والجدول الزمني في غضون 24 ساعة. بدون التزامات.',
+    contact_subtitle:'لنبدأ بمحادثة', contact_text:'أخبرنا عن فكرتك — وسنقدر الجداول الزمنية والتكاليف والجانب التقني. الاستشارة الأولى مجانية وبدون التزامات.',
+    form_type_label:'نوع المشروع', form_select_placeholder:'اختر...', form_opt_saas:'منصة SaaS', form_opt_marketplace:'سوق إلكتروني', form_opt_admin:'لوحة إدارة', form_opt_automation:'أتمتة', form_opt_ai:'تكامل الذكاء الاصطناعي', form_opt_other:'آخر',
+    form_desc_label:'وصف المشروع', form_desc_placeholder:'أخبرنا عن فكرتك والجمهور المستهدف والميزات الرئيسية...', form_contact_label:'البريد الإلكتروني', form_contact_placeholder:'email@example.com',
+    form_note:'نرد خلال 24 ساعة · لا بريد مزعج · سرية تامة',
     btn_submit:'احصل على تقدير مجاني ←',
-    footer_copy:'© 2026 VELOX. تطوير المنتجات الرقمية.',
+    footer_copy:'© 2026 Queen of Spades Tech. تطوير المنتجات الرقمية.',
     nav_services:'الخدمات', nav_process:'العملية', nav_stack:'التقنيات',
     nav_projects:'المشاريع', nav_ai:'الذكاء الاصطناعي', nav_cta:'ناقش مشروعك',
   },
   ja: {
     hero_badge:'新規プロジェクト受付中',
-    hero_title:'デジタル製品の<br>開発を<br><span class="highlight">お任せください</span>',
+    hero_title:'デジタル<br>製品の<br>開発を<br><span class="highlight">お任せください</span>',
     hero_sub:'4〜12週間でデジタル製品をローンチ —<br>ビジネスに集中、コードは私たちにお任せ。',
     btn_discuss:'プロジェクトを相談',
     btn_how:'開発プロセス ↓',
@@ -384,13 +660,45 @@ const TRANSLATIONS = {
     stat1:'リリース済みプロダクト', stat2:'週：平均MVP期間',
     stat3:'予算内完了率', stat4:'週でローンチ',
     sec_services_tag:'サービス内容', sec_services_h:'フルサイクル開発',
+    sec_services_desc:'アーキテクチャからデプロイまで。スケールして収益化する製品に特化。',
+    svc1_name:'4〜8週間でMVP', svc1_desc:'コア機能、データ統合、市場テストを備えた最小限の実用可能な製品の迅速な作成。仮説を検証するために必要なものだけ、不要なコストなしでローンチします。', svc1_tag:'市場投入時間',
+    svc2_name:'SaaSプラットフォーム', svc2_desc:'サブスクリプション、安全なデータストレージ、ユーザー分析を備えたスケーラブルなプラットフォーム。成長計画を持つスタートアップや中小企業に最適。', svc2_tag:'スケーラブル',
+    svc3_name:'マーケットプレイス', svc3_desc:'商品カタログ、オンライン決済、レビュー、モデレーション機能を備えたシステム。信頼性の高いインフラを通じて売り手と買い手を結びます。', svc3_tag:'B2B / B2C',
+    svc4_name:'管理パネル＆ダッシュボード', svc4_desc:'柔軟なアクセスロール、ダッシュボード、リアルタイム分析を備えたデータ管理のためのユーザーフレンドリーなインターフェース。チームの生産性が向上します。', svc4_tag:'ロールベース',
+    svc5_name:'自動化', svc5_desc:'定型タスクを簡素化し、既存ツールと統合し、チームの時間を節約するスクリプトとシステム。手作業を減らし、結果を増やします。', svc5_tag:'No-ops',
+    svc6_name:'AI統合', svc6_desc:'チャットボット、データ分析、RAGシステム、自動分類などのスマート機能を追加。ゼロから書き直すことなく、製品の競争力を高めます。', svc6_tag:'AIファースト',
     sec_process_tag:'開発プロセス', sec_process_h:'アイデアから本番環境へ',
+    sec_process_desc:'透明なプロセス、予測可能なタイムライン。サプライズなし — 動作する製品のみ。',
+    step1_title:'ディスカバリー＆ユーザーストーリー', step1_desc:'アイデアに深く入り込み、ユーザーストーリー（ユーザーが実際に必要とするもの）を書き、APIファーストのデザインを作成。初日から明確なインターフェースを通じてすべてがスムーズに動作します。', step1_tag1:'ユーザーストーリー', step1_tag2:'APIファースト', step1_tag3:'Figma',
+    step2_title:'アーキテクチャ＆スタック', step2_desc:'すべてがスケールするアプローチを選択。イベント駆動型またはマイクロサービス対応 — 成長目標に応じて。', step2_tag1:'イベント駆動型', step2_tag2:'マイクロサービス', step2_tag3:'クラウドネイティブ',
+    step3_title:'スプリントベース開発', step3_desc:'短い2週間のイテレーション。トランクベース開発とフィーチャーフラグ — 安定性を損なうことなく新機能を有効化。', step3_tag1:'2週間スプリント', step3_tag2:'フィーチャーフラグ', step3_tag3:'トランクベース',
+    step4_title:'CI/CD＆セキュリティ', step4_desc:'初日からゼロダウンタイムの自動更新。OWASP Top 10と依存関係スキャン — セキュリティは後付けではなく組み込み。', step4_tag1:'ゼロダウンタイム', step4_tag2:'OWASP', step4_tag3:'GitHub Actions',
+    step5_title:'ローンチ＆引き継ぎ', step5_desc:'すぐに使える監視性 — OpenTelemetry + Prometheus/Grafana。ボトルネックの場所がわかります。ドキュメントとチームトレーニング付きの完全な引き継ぎ。', step5_tag1:'OpenTelemetry', step5_tag2:'Grafana', step5_tag3:'ドキュメント',
+    timeline_label:'// 典型的なMVPタイムライン', timeline_phase1:'ディスカバリー', timeline_phase2:'アーキテクチャ＆デザイン', timeline_phase3:'開発（スプリント）', timeline_phase4:'QA＆セキュリティ', timeline_phase5:'ローンチ',
     sec_stack_tag:'技術スタック', sec_stack_h:'プロダクショングレードの技術',
+    sec_stack_desc:'実戦で証明されたツール、誇大広告なし。すべての選択は意図的。',
+    stack_cat1:'フロントエンド', stack_cat2:'バックエンド', stack_cat3:'インフラ＆DevOps', stack_cat4:'AI＆ML',
     sec_projects_tag:'実績', sec_projects_h:'実際の成果',
+    sec_projects_desc:'クライアントの匿名ケーススタディ。実際の数字、実際のタイムライン。',
+    proj1_type:'B2B SaaS · 自動化', proj1_title:'業務管理プラットフォーム', proj1_desc:'50人以上の従業員を持つB2B企業向けのCRM型システム。定型タスクの自動化、ERP統合、マネージャー向けリアルタイムダッシュボード。フルサイクル：ディスカバリー → 本番環境。',
+    proj2_type:'マーケットプレイス · B2C', proj2_title:'プロフェッショナルサービスマーケットプレイス', proj2_desc:'フリーランサーとクライアント向けプラットフォーム。エスクロー統合、レビュー、ビデオプレゼンテーション、オンデマンドのAI駆動タレントマッチング。',
+    proj3_type:'SaaS · EdTech', proj3_title:'企業研修向けLMSプラットフォーム', proj3_desc:'テスト、証明書、進捗分析、HRシステム統合を備えた学習管理システム。マルチテナントアーキテクチャ。',
+    metric_weeks:'週', metric_budget:'予算', metric_users:'ユーザー / 2ヶ月', metric_manual:'手作業',
+    metric_signups:'初月サインアップ', metric_rating:'ユーザー評価', metric_clients:'エンタープライズクライアント', metric_trained:'トレーニング済み従業員',
     sec_ai_tag:'AI統合', sec_ai_h:'スマートな製品を、より早く',
+    sec_ai_desc:'製品をゼロから書き直しません。最大の効果をもたらす場所にAIを組み込みます。',
+    ai1_title:'RAGシステム', ai1_desc:'データに基づいた正確な回答。ドキュメント、契約、ナレッジベースを知っているボット — 幻覚なし。',
+    ai2_title:'カスタムアシスタント', ai2_desc:'ブランドの個性を持つチャットボットを製品に統合。サポート、営業、オンボーディング — チームを増やさずに24/7対応。',
+    ai3_title:'LLMのファインチューニング', ai3_desc:'データに基づいてモデルをファインチューニング。医療、法務、金融、またはその他のニッチに特化したAI。',
+    ai4_title:'音声インターフェース', ai4_desc:'Whisper + LLM + TTS — コールセンター、検索、通話自動化のための音声ボット。40以上の言語で動作。',
     sec_contact_tag:'お問い合わせ', sec_contact_h:'プロジェクトについて話しましょう',
+    sec_contact_desc:'24時間以内に無料のコストとタイムライン見積もり。義務なし。',
+    contact_subtitle:'会話から始めましょう', contact_text:'アイデアを教えてください — タイムライン、コスト、技術面を見積もります。最初の相談は無料で義務はありません。',
+    form_type_label:'プロジェクトタイプ', form_select_placeholder:'選択...', form_opt_saas:'SaaSプラットフォーム', form_opt_marketplace:'マーケットプレイス', form_opt_admin:'管理パネル', form_opt_automation:'自動化', form_opt_ai:'AI統合', form_opt_other:'その他',
+    form_desc_label:'プロジェクト説明', form_desc_placeholder:'アイデア、ターゲットオーディエンス、主要機能について教えてください...', form_contact_label:'メール', form_contact_placeholder:'email@example.com',
+    form_note:'24時間以内に返信 · スパムなし · 完全な機密保持',
     btn_submit:'無料見積もりを取得 →',
-    footer_copy:'© 2026 VELOX. デジタルプロダクト開発。',
+    footer_copy:'© 2026 Queen of Spades Tech. デジタルプロダクト開発。',
     nav_services:'サービス', nav_process:'プロセス', nav_stack:'スタック',
     nav_projects:'実績', nav_ai:'AI', nav_cta:'相談する',
   },
@@ -399,7 +707,7 @@ const TRANSLATIONS = {
 // Nav link keys in order
 const NAV_KEYS = ['nav_services','nav_process','nav_stack','nav_projects','nav_ai'];
 
-let currentLang = 'ru';
+let currentLang = 'en';
 
 function applyLang(lang) {
   const t = TRANSLATIONS[lang] || TRANSLATIONS['en'];
@@ -408,6 +716,12 @@ function applyLang(lang) {
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
     if (t[key] !== undefined) el.innerHTML = t[key];
+  });
+
+  // Translate placeholder attributes (data-i18n-placeholder)
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (t[key] !== undefined) el.placeholder = t[key];
   });
 
   // Nav links (data-ru / data-ja approach replaced by full i18n)
@@ -461,25 +775,148 @@ document.addEventListener('click', e => {
   }
 });
 
+function getFormUiCopy() {
+  if (currentLang === 'ru') {
+    return {
+      sending: 'Отправляем...',
+      success: 'Спасибо! Заявка отправлена. Мы скоро свяжемся с вами.',
+      validation: 'Заполните описание проекта и email.',
+      rateLimit: 'Слишком часто. Попробуйте еще раз чуть позже.',
+      error: 'Не удалось отправить форму. Напишите нам на hello@queenofspades.tech.'
+    };
+  }
+
+  return {
+    sending: 'Sending...',
+    success: 'Thanks! Your request has been sent. We will get back to you soon.',
+    validation: 'Please enter a valid project description and email.',
+    rateLimit: 'Too many attempts. Please try again a little later.',
+    error: 'Could not send the form. Please email us at hello@queenofspades.tech.'
+  };
+}
+
+function setFormStatus(statusEl, state, message) {
+  if (!statusEl) return;
+  statusEl.textContent = message || '';
+  statusEl.classList.remove('is-pending', 'is-success', 'is-error');
+  if (state) statusEl.classList.add(state);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   applyLang(localStorage.getItem('lang') || 'en');
 
   // ─── Burger menu ───
+  const pageHeader = document.querySelector('header');
   const burger = document.getElementById('burgerBtn');
   const navLinks = document.getElementById('navLinks');
-  if (burger && navLinks) {
-    burger.addEventListener('click', () => {
-      const isOpen = burger.classList.toggle('open');
-      navLinks.classList.toggle('open');
-      burger.setAttribute('aria-expanded', isOpen);
+  const menuOverlay = document.getElementById('menuOverlay');
+  if (burger && navLinks && menuOverlay) {
+    const closeBurgerMenu = () => {
+      burger.classList.remove('open');
+      navLinks.classList.remove('open');
+      menuOverlay.classList.remove('open');
+      pageHeader?.classList.remove('menu-open');
+      document.body.classList.remove('menu-open');
+      burger.setAttribute('aria-expanded', 'false');
+    };
+
+    const openBurgerMenu = () => {
+      burger.classList.add('open');
+      navLinks.classList.add('open');
+      menuOverlay.classList.add('open');
+      pageHeader?.classList.add('menu-open');
+      document.body.classList.add('menu-open');
+      burger.setAttribute('aria-expanded', 'true');
+    };
+
+    burger.addEventListener('click', event => {
+      event.stopPropagation();
+      if (burger.classList.contains('open')) {
+        closeBurgerMenu();
+        return;
+      }
+      openBurgerMenu();
     });
+
+    menuOverlay.addEventListener('click', closeBurgerMenu);
+
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        closeBurgerMenu();
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 900) {
+        closeBurgerMenu();
+      }
+    });
+
     // Close burger on nav link click
     navLinks.querySelectorAll('a').forEach(link => {
-      link.addEventListener('click', () => {
-        burger.classList.remove('open');
-        navLinks.classList.remove('open');
-        burger.setAttribute('aria-expanded', 'false');
-      });
+      link.addEventListener('click', closeBurgerMenu);
+    });
+  }
+
+  const contactForm = document.getElementById('contactForm');
+  const formStatus = document.getElementById('formStatus');
+  if (contactForm && formStatus) {
+    const submitButton = contactForm.querySelector('.form-submit');
+    const defaultButtonText = submitButton ? submitButton.textContent : '';
+
+    contactForm.addEventListener('submit', async function (event) {
+      event.preventDefault();
+
+      const ui = getFormUiCopy();
+      if (!contactForm.reportValidity()) {
+        setFormStatus(formStatus, 'is-error', ui.validation);
+        return;
+      }
+      const formData = new FormData(contactForm);
+      const payload = {
+        projectType: String(formData.get('project_type') || '').trim(),
+        description: String(formData.get('description') || '').trim(),
+        contact: String(formData.get('contact') || '').trim(),
+        companyWebsite: String(formData.get('company_website') || '').trim()
+      };
+
+      if (!payload.description || !payload.contact) {
+        setFormStatus(formStatus, 'is-error', ui.validation);
+        return;
+      }
+
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = ui.sending;
+      }
+      setFormStatus(formStatus, 'is-pending', ui.sending);
+
+      try {
+        const response = await fetch(contactForm.action, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          if (response.status === 429) throw new Error(ui.rateLimit);
+          if (response.status === 400) throw new Error(ui.validation);
+          throw new Error(ui.error);
+        }
+
+        contactForm.reset();
+        setFormStatus(formStatus, 'is-success', ui.success);
+      } catch (error) {
+        setFormStatus(formStatus, 'is-error', error && error.message ? error.message : ui.error);
+      } finally {
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = defaultButtonText;
+        }
+      }
     });
   }
 });

@@ -1,0 +1,23 @@
+[Unit]
+Description=Queen of Spades Tech contact API
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/queenofspades.tech
+EnvironmentFile=/var/www/queenofspades.tech/.env
+ExecStart=/usr/bin/node /var/www/queenofspades.tech/server.js
+Restart=always
+RestartSec=5
+User=www-data
+Group=www-data
+Environment=NODE_ENV=production
+
+# Базовая изоляция процесса
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

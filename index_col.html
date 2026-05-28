@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rectangular Rings + Weaving Ribbons</title>
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    const canvas = document.getElementById("scene");
+
+    // =========================================================
+    // ГЛАВНЫЕ НАСТРОЙКИ
+    // Меняй в первую очередь только этот блок
+    // =========================================================
+    const CONFIG = {
+      scene: {
+        // Цвет фона сцены
+        background: 0x000000
+      },
+
+      camera: {
+        fov: 45,
+        near: 0.1,
+        far: 100,
+        z: 10
+      },
+
+      lights: {
+        ambientIntensity: 1.2,
+        dir1Color: 0xeaf3ff,
+        dir1Intensity: 3.0,
+        dir1Position: { x: 5, y: 6, z: 7 },
+        dir2Color: 0x8aa8ff,
+        dir2Intensity: 2.0,
+        dir2Position: { x: -6, y: -3, z: 4 },
+        dir3Color: 0xffffff,
+        dir3Intensity: 1.5,
+        dir3Position: { x: 0, y: -5, z: 3 },
+        point1Color: 0xffffff,
+        point1Intensity: 2.5,
+        point1Distance: 50,
+        point1Position: { x: 0, y: 2, z: 8 }
+      },
+
+      // Движение группы лент (бывший rootMotion)
+      ribbonGroupMotion: {
+        // Общая скорость вращения лент по Y
+        rotateYSpeed: 0.20,
+        // Амплитуда лёгкого покачивания по X
+        rotateXAmplitude: 0.08,
+        // Частота покачивания
+        rotateXFrequency: 0.35
+      },
+
+      materials: {
+        metalLight: {
+          color: 0xdce9ff,
+          metalness: 1,
+          roughness: 0.16
+        },
+        metalDark: {
+          color: 0x162131,
+          metalness: 1,
+          roughness: 0.20
+        },
+        ribbonOuter: {
+          color: 0xf5fbff,
+          metalness: 1,
+          roughness: 0.10
+        },
+      },
+
+      // ---------------------------------------------------------
+      // КОЛЬЦА — гимбал (армиллярная сфера)
+      // Каждое кольцо вращается по своей уникальной оси
+      // ---------------------------------------------------------
+      rings: [
+        {
+          radius: 2.60,
+          width: 0.51,
+          height: 0.20,
+          material: "dark",
+          initialRotation: { x: 0, y: 0, z: 0 },
+          // Ось Y
+          gimbalAxis: [0, 1, 0],
+          gimbalSpeed: 0.3
+        },
+        {
+          radius: 2.10,
+          width: 0.33,
+          height: 0.13,
+          material: "light",
+          initialRotation: { x: 1.5708, y: 0, z: 0 },
+          // Ось X
+          gimbalAxis: [1, 0, 0],
+          gimbalSpeed: 0.25
+        },
+        {
+          radius: 1.75,
+          width: 0.24,
+          height: 0.11,
+          material: "light",
+          initialRotation: { x: 0.7854, y: 0.7854, z: 0 },
+          // Диагональ XY
+          gimbalAxis: [0.707, 0.707, 0],
+          gimbalSpeed: 0.2
+        },
+        {
+          radius: 1.45,
+          width: 0.29,
+          height: 0.09,
+          material: "dark",
+          initialRotation: { x: 0, y: 0.7854, z: 1.0472 },
+          // Диагональ YZ
+          gimbalAxis: [0, 0.707, 0.707],
+          gimbalSpeed: 0.35
+        },
+        {
+          radius: 1.15,
+          width: 0.20,
+          height: 0.08,
+          material: "light",
+          initialRotation: { x: 1.0472, y: 0, z: 0.7854 },
+          // Диагональ XZ
+          gimbalAxis: [0.707, 0, 0.707],
+          gimbalSpeed: 0.25
+        }
+      ],
+
+      // ---------------------------------------------------------
+      // ВНЕШНИЕ ЛЕНТЫ
+      // Белые ленты, проходящие сквозь кольца, с волновым эффектом
+      // ---------------------------------------------------------
+      outerRibbons: [
+        {
+          width: 0.80,
+          height: 0.05,
+          steps: 320,
+
+          points: [
+            { x: -4.8, y:  4.2, z:  0.20 },
+            { x: -3.4, y:  2.6, z:  0.10 },
+            { x: -2.2, y:  1.4, z: -0.15 },
+            { x: -1.0, y:  0.6, z:  0.10 },
+            { x:  0.2, y:  0.0, z:  0.20 },
+            { x:  1.0, y: -0.8, z: -0.15 },
+            { x:  0.2, y: -2.4, z:  0.10 },
+            { x: -0.4, y: -4.8, z:  0.20 }
+          ],
+
+          position: { x: 0, y: 0, z: 0 },
+          rotation: { x: 0.08, y: -0.12, z: 0.12 },
+
+          driftPosition: { x: 0.12, y: 0.18, z: 0.14 },
+          driftFrequency: { x: 0.35, y: 0.55, z: 0.42 },
+          driftRotation: { x: 0.10, y: 0.08, z: 0.18 },
+          driftRotationFrequency: { x: 0.40, y: 0.30, z: 0.50 },
+
+          phase: 0.0,
+
+          // Волновой displacement вершин
+          wave: { amplitude: 0.12, frequency: 2.5, speed: 1.8 }
+        },
+
+        {
+          width: 0.72,
+          height: 0.05,
+          steps: 320,
+          points: [
+            { x:  4.9, y:  2.8, z: -0.15 },
+            { x:  3.3, y:  2.0, z:  0.10 },
+            { x:  2.0, y:  1.2, z: -0.10 },
+            { x:  0.8, y:  0.6, z:  0.10 },
+            { x: -0.4, y: -0.1, z:  0.20 },
+            { x: -1.6, y: -0.9, z: -0.12 },
+            { x: -2.8, y: -1.8, z:  0.08 },
+            { x: -4.6, y: -3.4, z: -0.10 }
+          ],
+          position: { x: 0, y: 0, z: 0 },
+          rotation: { x: -0.18, y: 0.08, z: -0.06 },
+          driftPosition: { x: 0.16, y: 0.12, z: 0.10 },
+          driftFrequency: { x: 0.45, y: 0.38, z: 0.52 },
+          driftRotation: { x: 0.08, y: 0.14, z: 0.10 },
+          driftRotationFrequency: { x: 0.33, y: 0.48, z: 0.36 },
+
+          phase: 1.4,
+
+          wave: { amplitude: 0.10, frequency: 3.0, speed: 1.4 }
+        }
+      ],
+
+    };
+
+    // =========================================================
+    // СЦЕНА / КАМЕРА / РЕНДЕР
+    // =========================================================
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(CONFIG.scene.background);
+
+    const camera = new THREE.PerspectiveCamera(
+      CONFIG.camera.fov,
+      window.innerWidth / window.innerHeight,
+      CONFIG.camera.near,
+      CONFIG.camera.far
+    );
+    camera.position.set(0, 0, CONFIG.camera.z);
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas: canvas,
+      antialias: true,
+      alpha: false
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    // =========================================================
+    // СВЕТ
+    // =========================================================
+    scene.add(new THREE.AmbientLight(0xffffff, CONFIG.lights.ambientIntensity));
+
+    const dir1 = new THREE.DirectionalLight(
+      CONFIG.lights.dir1Color,
+      CONFIG.lights.dir1Intensity
+    );
+    dir1.position.set(
+      CONFIG.lights.dir1Position.x,
+      CONFIG.lights.dir1Position.y,
+      CONFIG.lights.dir1Position.z
+    );
+    scene.add(dir1);
+
+    const dir2 = new THREE.DirectionalLight(
+      CONFIG.lights.dir2Color,
+      CONFIG.lights.dir2Intensity
+    );
+    dir2.position.set(
+      CONFIG.lights.dir2Position.x,
+      CONFIG.lights.dir2Position.y,
+      CONFIG.lights.dir2Position.z
+    );
+    scene.add(dir2);
+
+    const dir3 = new THREE.DirectionalLight(
+      CONFIG.lights.dir3Color,
+      CONFIG.lights.dir3Intensity
+    );
+    dir3.position.set(
+      CONFIG.lights.dir3Position.x,
+      CONFIG.lights.dir3Position.y,
+      CONFIG.lights.dir3Position.z
+    );
+    scene.add(dir3);
+
+    const point1 = new THREE.PointLight(
+      CONFIG.lights.point1Color,
+      CONFIG.lights.point1Intensity,
+      CONFIG.lights.point1Distance
+    );
+    point1.position.set(
+      CONFIG.lights.point1Position.x,
+      CONFIG.lights.point1Position.y,
+      CONFIG.lights.point1Position.z
+    );
+    scene.add(point1);
+
+    // =========================================================
+    // МАТЕРИАЛЫ
+    // =========================================================
+    const materialMetalLight = new THREE.MeshStandardMaterial(CONFIG.materials.metalLight);
+    const materialMetalDark = new THREE.MeshStandardMaterial(CONFIG.materials.metalDark);
+    const materialRibbonOuter = new THREE.MeshStandardMaterial(CONFIG.materials.ribbonOuter);
+
+    // =========================================================
+    // КРИВАЯ-КРУГ ДЛЯ КОЛЕЦ
+    // =========================================================
+    class CircleCurve extends THREE.Curve {
+      constructor(radius) {
+        super();
+        this.radius = radius;
+      }
+
+      getPoint(t) {
+        const a = t * Math.PI * 2;
+        return new THREE.Vector3(
+          Math.cos(a) * this.radius,
+          Math.sin(a) * this.radius,
+          0
+        );
+      }
+    }
+
+    // =========================================================
+    // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+    // =========================================================
+
+    // Создаёт прямоугольное сечение (с опциональным скруглением углов)
+    function createRectShape(width, height, cornerRadius) {
+      const shape = new THREE.Shape();
+      const hw = width / 2;
+      const hh = height / 2;
+      const r = Math.min(cornerRadius || 0, hw, hh);
+
+      if (r <= 0) {
+        shape.moveTo(-hw, -hh);
+        shape.lineTo(hw, -hh);
+        shape.lineTo(hw, hh);
+        shape.lineTo(-hw, hh);
+        shape.lineTo(-hw, -hh);
+      } else {
+        shape.moveTo(-hw + r, -hh);
+        shape.lineTo(hw - r, -hh);
+        shape.quadraticCurveTo(hw, -hh, hw, -hh + r);
+        shape.lineTo(hw, hh - r);
+        shape.quadraticCurveTo(hw, hh, hw - r, hh);
+        shape.lineTo(-hw + r, hh);
+        shape.quadraticCurveTo(-hw, hh, -hw, hh - r);
+        shape.lineTo(-hw, -hh + r);
+        shape.quadraticCurveTo(-hw, -hh, -hw + r, -hh);
+      }
+
+      return shape;
+    }
+
+    // Создаёт кольцо с прямоугольным сечением (скруглённые грани)
+    function createRectRing(radius, width, height, material, steps = 260, cornerRadius = 0.06) {
+      const shape = createRectShape(width, height, cornerRadius);
+      const path = new CircleCurve(radius);
+
+      const geometry = new THREE.ExtrudeGeometry(shape, {
+        steps: steps,
+        bevelEnabled: false,
+        extrudePath: path
+      });
+
+      geometry.center();
+
+      return new THREE.Mesh(geometry, material);
+    }
+
+    // Создаёт ленту по набору 3D-точек
+    function createRibbonFromPoints(points, width, height, material, steps = 320, closed = false) {
+      const shape = createRectShape(width, height);
+
+      const vectorPoints = points.map(p => new THREE.Vector3(p.x, p.y, p.z));
+
+      const curve = new THREE.CatmullRomCurve3(
+        vectorPoints,
+        closed,
+        "centripetal",
+        0.5
+      );
+
+      const geometry = new THREE.ExtrudeGeometry(shape, {
+        steps: steps,
+        bevelEnabled: false,
+        extrudePath: curve
+      });
+
+      geometry.center();
+
+      return new THREE.Mesh(geometry, material);
+    }
+
+    // Выбор материала по имени
+    function getRingMaterial(name) {
+      return name === "dark" ? materialMetalDark : materialMetalLight;
+    }
+
+    const rings = [];
+
+    // =========================================================
+    // СОЗДАНИЕ КОЛЕЦ (гимбал — каждое добавляется в scene)
+    // =========================================================
+    CONFIG.rings.forEach((cfg) => {
+      const ring = createRectRing(
+        cfg.radius,
+        cfg.width,
+        cfg.height,
+        getRingMaterial(cfg.material),
+        260
+      );
+
+      // Нормализованная ось гимбального вращения
+      const axis = new THREE.Vector3(
+        cfg.gimbalAxis[0],
+        cfg.gimbalAxis[1],
+        cfg.gimbalAxis[2]
+      ).normalize();
+
+      // Начальная ориентация (перпендикулярные плоскости)
+      ring.rotation.set(
+        cfg.initialRotation.x,
+        cfg.initialRotation.y,
+        cfg.initialRotation.z
+      );
+
+      ring.userData = {
+        gimbalAxis: axis,
+        gimbalSpeed: cfg.gimbalSpeed,
+        // Сохраняем начальный quaternion для абсолютного расчёта угла (бесшовный луп)
+        initialQuaternion: ring.quaternion.clone()
+      };
+
+      // Кольца в scene напрямую, не в ribbonGroup
+      scene.add(ring);
+      rings.push(ring);
+    });
+
+
+
+    // =========================================================
+    // АНИМАЦИЯ (бесшовный луп)
+    // =========================================================
+    const clock = new THREE.Clock();
+
+    // Период лупа: 40π ≈ 125.66 сек
+    // При скоростях {0.3, 0.25, 0.2, 0.35, 0.25} каждое кольцо
+    // делает целое число оборотов: 6, 5, 4, 7, 5
+    const LOOP_DURATION = 40 * Math.PI;
+    const _gimbalQuat = new THREE.Quaternion(); // переиспользуемый объект
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const t = clock.getElapsedTime();
+      const loopT = t % LOOP_DURATION;
+
+      // -------------------------
+      // Кольца — абсолютный угол (без дрифта, идеальный луп)
+      // -------------------------
+      rings.forEach((ring) => {
+        const angle = ring.userData.gimbalSpeed * loopT;
+        _gimbalQuat.setFromAxisAngle(ring.userData.gimbalAxis, angle);
+        ring.quaternion.copy(ring.userData.initialQuaternion).multiply(_gimbalQuat);
+      });
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    // =========================================================
+    // АДАПТИВ
+    // =========================================================
+    window.addEventListener("resize", function () {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    });
+  </script>
+</body>
+</html>

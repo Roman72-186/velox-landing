@@ -1,6 +1,21 @@
+﻿> Совместимый вход для Claude Code: перед работой читать [AGENTS.md](AGENTS.md), затем [../AGENTS.md](../AGENTS.md).  
+> Сохранить сессию → C:\Users\User\.agents\skills\save-session\SKILL.md → session-handoffs/current.md.  
+> Прочитай сохранённую сессию → сначала session-handoffs/current.md, затем [AGENTS.md](AGENTS.md).
+
+---
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+---
+
+## Общие слои
+
+Лендинг — категория C, минимальный набор:
+
+- **Голос и стиль:** [../ai-clone/voice/](../ai-clone/voice/), [../ai-clone/style/](../ai-clone/style/)
+- **Уроки:** [../ai-clone/feedback/](../ai-clone/feedback/)
+- **Корневой навигатор:** [../CLAUDE.md](../CLAUDE.md)
 
 ---
 

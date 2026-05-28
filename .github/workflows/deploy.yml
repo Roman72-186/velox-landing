@@ -1,0 +1,118 @@
+name: Deploy to VPS
+
+# Автодеплой статики и Node-сервиса на VPS по push в main.
+# Раздел secrets (Settings → Secrets and variables → Actions):
+#   DEPLOY_HOST       — IP или DNS целевого VPS (например, 1.2.3.4)
+#   DEPLOY_USER       — пользователь SSH (например, deploy)
+#   DEPLOY_SSH_KEY    — приватный ключ в формате OpenSSH (полный текст)
+#   DEPLOY_PORT       — порт SSH (необязательно, по умолчанию 22)
+#   DEPLOY_PATH       — путь на сервере (необязательно, по умолчанию /var/www/queenofspades.tech)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'style.css'
+      - 'script.js'
+      - 'icons.css'
+      - '404.html'
+      - 'robots.txt'
+      - 'sitemap.xml'
+      - 'favicon*'
+      - 'apple-touch-icon.png'
+      - 'og-image.png'
+      - 'server.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'contact/**'
+      - 'privacy/**'
+      - 'terms/**'
+      - 'services/**'
+      - 'deploy/server/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH || '/var/www/queenofspades.tech' }}
+      DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Load SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Trust host key
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "${DEPLOY_PORT}" -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Rsync site files
+        run: |
+          rsync -avz --delete \
+            -e "ssh -p ${DEPLOY_PORT}" \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='.claude/' \
+            --exclude='node_modules/' \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            --exclude='.deploy_*' \
+            --exclude='*.zip' \
+            --exclude='CLAUDE.md' \
+            --exclude='LOOP_INSTRUCTION.md' \
+            --exclude='resend-analysis.md' \
+            --exclude='INTEGRATION.md' \
+            --exclude='FORM_SETUP.md' \
+            --exclude='index_col.html' \
+            --exclude='CNAME' \
+            --exclude='.gitignore' \
+            --exclude='.env.example' \
+            --exclude='deploy/MIGRATION.md' \
+            ./ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${DEPLOY_PATH}/"
+
+      - name: Install production deps & restart service
+        run: |
+          ssh -p "${DEPLOY_PORT}" "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "cd ${DEPLOY_PATH} && npm ci --omit=dev && sudo systemctl restart queenofspades && sudo systemctl is-active queenofspades"
+
+      - name: Smoke test
+        run: |
+          set -e
+          # --resolve фиксирует адрес = DEPLOY_HOST (новый VPS), не зависит от DNS.
+          # Это критично во время cutover: иначе можно проверять старый сервер.
+          HOST="${{ secrets.DEPLOY_HOST }}"
+
+          STATUS=$(curl -sS -o /dev/null -w "%{http_code}" -L \
+            --resolve "queenofspades.tech:443:${HOST}" \
+            --resolve "queenofspades.tech:80:${HOST}" \
+            https://queenofspades.tech/)
+          echo "Homepage HTTP $STATUS (host=${HOST})"
+          test "$STATUS" = "200"
+
+          # Honeypot должен вернуть 400 — бэкенд жив и принимает POST
+          API=$(curl -sS -o /dev/null -w "%{http_code}" -X POST \
+            --resolve "queenofspades.tech:443:${HOST}" \
+            -H "Content-Type: application/json" \
+            -d '{"description":"deploy smoke test from CI 1234567890","contact":"ci@example.com","companyWebsite":"https://spam.example"}' \
+            https://queenofspades.tech/api/contact)
+          echo "API HTTP $API"
+          # 400 = honeypot отработал, бэкенд жив.
+          # 429 = rate-limit (20s min-interval) после ребилда подряд — тоже значит бэкенд жив.
+          case "$API" in
+            400|429) ;;
+            *) echo "Unexpected API status: $API" && exit 1 ;;
+          esac
