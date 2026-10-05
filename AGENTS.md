@@ -4,13 +4,14 @@
 
 Этот файл подключает существующий проект к общим правилам Codex и Claude Code. Локальная специфика проекта остаётся в этом каталоге, общие правила берутся уровнем выше.
 
-1. Сначала читать [../AGENTS.md](../AGENTS.md) — главный источник правды workspace.
+1. Сначала читать [../../AGENTS.md](../../AGENTS.md) — главный источник правды workspace.
 2. Для Claude Code совместимый вход — [CLAUDE.md](CLAUDE.md), но он должен вести к этому AGENTS.md.
-3. Для кода читать [../ai-clone/principles/code.md](../ai-clone/principles/code.md).
-4. Для продуктовых решений читать [../ai-clone/principles/product.md](../ai-clone/principles/product.md).
-5. Для правил работы агентов читать [../ai-clone/principles/working-with-claude.md](../ai-clone/principles/working-with-claude.md).
-6. Для уроков и повторяющихся ошибок читать [../ai-clone/feedback/](../ai-clone/feedback/).
-7. Для планов использовать [../plans/](../plans/); для handoff между Codex и Claude Code использовать [session-handoffs/current.md](session-handoffs/current.md).
+3. Для общего мозга проекта — [../CLAUDE.md](../CLAUDE.md) (ai-clone, входная точка).
+4. Для кода, отладки и деплоя читать [../principles/code.md](../principles/code.md).
+5. Для продуктовых решений читать [../principles/product.md](../principles/product.md).
+6. Для правил работы агентов читать [../principles/working-with-claude.md](../principles/working-with-claude.md).
+7. Для уроков и повторяющихся ошибок читать [../feedback/](../feedback/) — для этого проекта особенно применимы: [never-touch-or-overwrite-secrets](../feedback/never-touch-or-overwrite-secrets.md), [env-example-is-part-of-delivery](../feedback/env-example-is-part-of-delivery.md), [always-backup-before-deploy](../feedback/always-backup-before-deploy.md), [deploy-what-users-actually-open](../feedback/deploy-what-users-actually-open.md), [change-only-files-the-task-touched](../feedback/change-only-files-the-task-touched.md).
+8. Для планов использовать [../../plans/](../../plans/); для handoff между Codex и Claude Code использовать [session-handoffs/current.md](session-handoffs/current.md).
 
 ## Паритет Codex и Claude Code
 
