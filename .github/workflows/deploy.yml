@@ -73,6 +73,7 @@ jobs:
             --exclude='.deploy_*' \
             --exclude='*.zip' \
             --exclude='CLAUDE.md' \
+            --exclude='AGENTS.md' \
             --exclude='LOOP_INSTRUCTION.md' \
             --exclude='resend-analysis.md' \
             --exclude='INTEGRATION.md' \
