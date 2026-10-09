@@ -6,12 +6,12 @@
 
 1. Сначала читать [../../AGENTS.md](../../AGENTS.md) — главный источник правды workspace.
 2. Для Claude Code совместимый вход — [CLAUDE.md](CLAUDE.md), но он должен вести к этому AGENTS.md.
-3. Для общего мозга проекта — [../CLAUDE.md](../CLAUDE.md) (ai-clone, входная точка).
-4. Для кода, отладки и деплоя читать [../principles/code.md](../principles/code.md).
-5. Для продуктовых решений читать [../principles/product.md](../principles/product.md).
-6. Для правил работы агентов читать [../principles/working-with-claude.md](../principles/working-with-claude.md).
-7. Для уроков и повторяющихся ошибок читать [../feedback/](../feedback/) — для этого проекта особенно применимы: [never-touch-or-overwrite-secrets](../feedback/never-touch-or-overwrite-secrets.md), [env-example-is-part-of-delivery](../feedback/env-example-is-part-of-delivery.md), [always-backup-before-deploy](../feedback/always-backup-before-deploy.md), [deploy-what-users-actually-open](../feedback/deploy-what-users-actually-open.md), [change-only-files-the-task-touched](../feedback/change-only-files-the-task-touched.md).
-8. Для планов использовать [../../plans/](../../plans/); для handoff между Codex и Claude Code использовать [session-handoffs/current.md](session-handoffs/current.md).
+3. Для общего мозга проекта — [../../CLAUDE.md](../../CLAUDE.md) (ai-clone, входная точка).
+4. Для кода, отладки и деплоя читать [../../_brain/principles/code.md](../../_brain/principles/code.md).
+5. Для продуктовых решений читать [../../_brain/principles/product.md](../../_brain/principles/product.md).
+6. Для правил работы агентов читать [../../_brain/principles/working-with-claude.md](../../_brain/principles/working-with-claude.md).
+7. Для уроков и повторяющихся ошибок читать [../../_brain/feedback/](../../_brain/feedback/) — для этого проекта особенно применимы: [never-touch-or-overwrite-secrets](../../_brain/feedback/never-touch-or-overwrite-secrets.md), [env-example-is-part-of-delivery](../../_brain/feedback/env-example-is-part-of-delivery.md), [always-backup-before-deploy](../../_brain/feedback/always-backup-before-deploy.md), [deploy-what-users-actually-open](../../_brain/feedback/deploy-what-users-actually-open.md), [change-only-files-the-task-touched](../../_brain/feedback/change-only-files-the-task-touched.md).
+8. Планы этого проекта — в локальной папке `plans/`; для handoff между Codex и Claude Code использовать [session-handoffs/current.md](session-handoffs/current.md).
 
 ## Паритет Codex и Claude Code
 
@@ -26,6 +26,10 @@ Codex и Claude Code равноправны: любой из них может �
 ## Локальная специфика проекта
 
 Если в проекте уже есть подробный CLAUDE.md, считать его историческим локальным контекстом проекта. Новые общие требования не копировать сюда целиком: ссылаться на общий слой выше.
+
+## Промт для нового чата
+
+Когда владелец просит промт для нового чата: текст пишется в `session-handoffs/<сессия>-NEXT-CHAT-PROMPT.md` этого проекта, где `<сессия>` — короткое название текущей сессии без пробелов по теме работы (`links-fix`). Файл сразу коммитится — только он, по пути, в репозитории, которому принадлежит эта папка. В чат — одна строка в блоке кода для копирования: `Прочитай <полный путь к файлу>`, без пересказа промта. Полное правило — корневой `AGENTS.md`, раздел «Сохранение и восстановление сессии».
 
 ## Связь с другими файлами
 
