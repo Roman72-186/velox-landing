@@ -42,17 +42,22 @@ second fully translated language; the other 8 dropdown languages back-fill missi
 ```
 ├── index.html, style.css, script.js, icons.css   ← the landing page (see Architecture below)
 ├── server.js, package.json                        ← Node http server + POST /api/contact (nodemailer)
-├── contact/, privacy/, terms/, services/{mvp-development,saas-development,marketplace-development,ai-integration}/
+├── contact/, privacy/, terms/, services/ (index + mvp-development, saas-development, marketplace-development, ai-integration)
 ├── 404.html, robots.txt, sitemap.xml, CNAME, favicon*/og-image.png
 ├── deploy/server/{nginx-queenofspades.conf, queenofspades.service}, deploy/MIGRATION.md
 ├── .github/workflows/deploy.yml   ← auto-deploy to VPS on push to main (see Deploy below)
 ├── FORM_SETUP.md, .env.example    ← contact-form config & VPS setup reference
-└── .claude/skills/                ← Claude Code skills (auto-loaded)
+└── .claude/skills/                ← Claude Code skills (auto-loaded; .claude/ is gitignored, local only)
 ```
 
 `exports/`, `index_col.html`, `LOOP_INSTRUCTION.md`, `INTEGRATION.md`, `resend-analysis.md`,
 `queenofspades-hetzner-deploy-*.zip` are local working/reference artifacts — not deployed
 (excluded in `deploy.yml`'s rsync step).
+
+**The GitHub repo is public.** `session-handoffs/`, `.env`, `.deploy_*` SSH keys and `*.zip` are
+gitignored for that reason — stage files by path, never `git add -A`. A new tracked file in the repo
+root that is not part of the site must be added to the rsync `--exclude` list in `deploy.yml`
+(and, if sensitive, to the `deny` rules in the nginx config), otherwise it ships to the web root.
 
 ## Development
 
@@ -69,7 +74,10 @@ PORT=3001 MAIL_DRY_RUN=true npm start   # http://localhost:3001 — logs the lea
 
 **Cache-busting.** All 10 HTML pages (`index.html`, `404.html`, `contact/`, `privacy/`, `terms/`,
 `services/**`) share the root `style.css`, `icons.css`, `script.js` via `?v=N` query strings. After
-editing a shared asset, bump its `?v=` in **every** page, otherwise returning visitors get a stale file.
+editing a shared asset, bump its `?v=` in **every** page, otherwise returning visitors get a stale file
+(nginx serves css/js with `Cache-Control: immutable` for 30 days, so a missed bump is never self-healing).
+Check that all pages agree: `grep -rhoE '(style|icons|script)\.(css|js)\?v=[0-9]+' --include=*.html . | sort | uniq -c`
+(`index_col.html` is a non-deployed artifact and may lag).
 Subpages also load Three.js + `script.js`, so i18n keys for subpage text live in `EXTRA_TRANSLATIONS`.
 
 No build step, no linter, no automated test suite. `playwright` is a devDependency but there are no
@@ -78,15 +86,21 @@ committed spec files — it's available for ad-hoc manual browser checks, not a 
 ### Contact form backend (`server.js`)
 
 Plain `http` module (no Express). Responsibilities:
-- Serves static files from the repo root (blocks `.git`, `.claude`, `node_modules`).
+- Serves static files from the repo root, refusing any dot-segment (`.env`, `.git`, `.deploy_*`),
+  `node_modules/`, `deploy/`, `session-handoffs/`, `server.js`, `package*.json`. This is a local-dev
+  convenience: in production nginx serves the static files itself and forwards **only**
+  `location = /api/contact` to Node, so public hiding is done by nginx `deny` rules — keep both lists
+  in sync.
 - `POST /api/contact` → validates payload (honeypot `companyWebsite` field, min description length),
   rate-limits by IP (5 attempts / 10 min window, 20s min interval between attempts), sends the lead via
   `nodemailer` SMTP (or logs it when `MAIL_DRY_RUN=true`).
 
 Required env vars (see `.env.example`): `PORT`, `MAIL_TO`, `MAIL_FROM`, `SMTP_HOST`, `SMTP_PORT`,
-`SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_DRY_RUN`. Node listens on `127.0.0.1:PORT`; nginx
-(`deploy/server/nginx-queenofspades.conf`) proxies the public domain to it — if you change `PORT`,
-update `proxy_pass` there too. New env key → update `.env.example` in the same change.
+`SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_DRY_RUN`. On the VPS Node runs on `PORT=3001`, matching
+`proxy_pass http://127.0.0.1:3001` in `deploy/server/nginx-queenofspades.conf` — change both together.
+Node binds `127.0.0.1` only. The rate limiter trusts proxy headers only when the socket peer is
+loopback (i.e. nginx), and then uses `X-Real-IP` or the **last** `X-Forwarded-For` entry — never the
+first, which the client controls. New env key → update `.env.example` in the same change.
 
 **Secrets rule:** never write, overwrite, or print real values in `.env` / server `.env` — the owner
 edits those by hand. Verify by shape (length/prefix), not by echoing the value.
