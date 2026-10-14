@@ -55,10 +55,21 @@ function normalizeText(value, maxLength) {
     .slice(0, maxLength);
 }
 
+function normalizeIp(value) {
+  return String(value || '').trim().replace(/^::ffff:/, '');
+}
+
+// Заголовкам доверяем только от локального nginx. X-Real-IP он перезаписывает целиком,
+// а в X-Forwarded-For дописывает адрес клиента в конец — первые элементы подставляет сам клиент.
 function getClientIp(req) {
-  const forwarded = req.headers['x-forwarded-for'];
-  const rawIp = Array.isArray(forwarded) ? forwarded[0] : String(forwarded || req.socket.remoteAddress || '');
-  return rawIp.split(',')[0].trim().replace(/^::ffff:/, '') || 'unknown';
+  const socketIp = normalizeIp(req.socket.remoteAddress);
+  if (socketIp !== '127.0.0.1' && socketIp !== '::1') return socketIp || 'unknown';
+
+  const realIp = normalizeIp(req.headers['x-real-ip']);
+  if (realIp) return realIp;
+
+  const forwarded = String(req.headers['x-forwarded-for'] || '').split(',');
+  return normalizeIp(forwarded[forwarded.length - 1]) || socketIp;
 }
 
 function checkRateLimit(ip) {
@@ -210,11 +221,19 @@ async function sendLeadEmail(lead, ip) {
 }
 
 function resolveFilePath(urlPath) {
-  const safePath = decodeURIComponent(urlPath === '/' ? '/index.html' : urlPath);
+  let safePath;
+  try {
+    safePath = decodeURIComponent(urlPath === '/' ? '/index.html' : urlPath);
+  } catch {
+    return null; // битый %-escape: без try исключение роняло процесс
+  }
+
+  // Скрытые файлы и каталоги (.env, .git, .deploy_* ключи) и служебное — не отдаём никогда
+  const segments = safePath.split(/[/\\]/);
   if (
-    safePath.startsWith('/.git') ||
-    safePath.startsWith('/.claude') ||
-    safePath.startsWith('/node_modules')
+    segments.some((segment) => segment.startsWith('.')) ||
+    /^\/(node_modules|deploy|session-handoffs)(\/|$)/.test(safePath) ||
+    /^\/(server\.js|package(-lock)?\.json)$/.test(safePath)
   ) {
     return null;
   }
@@ -292,6 +311,7 @@ const server = http.createServer(async (req, res) => {
   res.end('Method not allowed');
 });
 
-server.listen(PORT, () => {
+// Только localhost: снаружи сервис доступен лишь через nginx
+server.listen(PORT, '127.0.0.1', () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
