@@ -1,4 +1,5 @@
 const http = require('http');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
@@ -21,6 +22,23 @@ const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX_ATTEMPTS = 5;
 const RATE_LIMIT_MIN_INTERVAL_MS = 20 * 1000;
 const rateLimitStore = new Map();
+
+// Заявки хранятся вне каталога сайта: rsync --delete при деплое стёр бы их.
+// На VPS systemd создаёт каталог через StateDirectory= и передаёт путь в STATE_DIRECTORY.
+const LEADS_DIR = process.env.LEADS_DIR || process.env.STATE_DIRECTORY || path.join(ROOT_DIR, 'data');
+const LEADS_FILE = path.join(LEADS_DIR, 'leads.json');
+const LEAD_STATUSES = ['new', 'in_progress', 'done', 'spam'];
+const LEAD_NOTE_MAX_LENGTH = 2000;
+
+// Кабинет супер-админа выключен, пока на сервере не задан ADMIN_PASSWORD от 12 символов
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+const ADMIN_ENABLED = ADMIN_PASSWORD.length >= 12;
+const ADMIN_COOKIE = 'qos_admin';
+const ADMIN_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
+const ADMIN_LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const ADMIN_LOGIN_MAX_FAILURES = 5;
+const adminSessions = new Map(); // token → expiresAt; живут в памяти, после рестарта вход заново
+const adminLoginFailures = new Map(); // ip → [timestamps]
 
 const MIME_TYPES = {
   '.css': 'text/css; charset=utf-8',
@@ -166,6 +184,10 @@ function getTransporter() {
       host: SMTP_HOST,
       port: SMTP_PORT,
       secure: SMTP_SECURE,
+      // Укладываемся в proxy_read_timeout 30s у nginx: заявка уже сохранена, ждать почту дольше незачем
+      connectionTimeout: 10 * 1000,
+      greetingTimeout: 10 * 1000,
+      socketTimeout: 15 * 1000,
       auth: {
         user: SMTP_USER,
         pass: SMTP_PASS
@@ -220,10 +242,234 @@ async function sendLeadEmail(lead, ip) {
   await getTransporter().sendMail(mailOptions);
 }
 
+// ─── Хранилище заявок: один JSON-файл, запись через tmp + rename ───
+// Объём — десятки заявок в месяц, поэтому файл целиком в памяти и перезаписывается целиком.
+
+let leadsCache = null;
+let leadsWriteQueue = Promise.resolve();
+
+async function loadLeads() {
+  if (leadsCache) return leadsCache;
+  try {
+    const parsed = JSON.parse(await fs.promises.readFile(LEADS_FILE, 'utf8'));
+    if (!Array.isArray(parsed)) throw new Error(`${LEADS_FILE} is not an array`);
+    leadsCache = parsed;
+  } catch (error) {
+    // Битый файл не затираем: лучше ошибка, чем потеря всех заявок
+    if (error.code !== 'ENOENT') throw error;
+    leadsCache = [];
+  }
+  return leadsCache;
+}
+
+function persistLeads() {
+  const snapshot = JSON.stringify(leadsCache, null, 2);
+  leadsWriteQueue = leadsWriteQueue
+    .catch(() => {})
+    .then(async () => {
+      await fs.promises.mkdir(LEADS_DIR, { recursive: true, mode: 0o700 });
+      const tmpFile = `${LEADS_FILE}.tmp`;
+      await fs.promises.writeFile(tmpFile, snapshot, { mode: 0o600 });
+      await fs.promises.rename(tmpFile, LEADS_FILE);
+    });
+  return leadsWriteQueue;
+}
+
+async function saveNewLead(lead, ip) {
+  const leads = await loadLeads();
+  const record = {
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    projectType: lead.projectType,
+    contact: lead.contact,
+    description: lead.description,
+    ip,
+    status: 'new',
+    note: '',
+    mail: { status: 'pending' }
+  };
+  leads.push(record);
+  await persistLeads();
+  return record;
+}
+
+async function updateLead(id, changes) {
+  const leads = await loadLeads();
+  const record = leads.find((item) => item.id === id);
+  if (!record) return null;
+  Object.assign(record, changes, { updatedAt: new Date().toISOString() });
+  await persistLeads();
+  return record;
+}
+
+// ─── Кабинет супер-админа ───
+
+function hashForCompare(value) {
+  return crypto.createHash('sha256').update(String(value)).digest();
+}
+
+function isAdminPasswordValid(input) {
+  return crypto.timingSafeEqual(hashForCompare(input), hashForCompare(ADMIN_PASSWORD));
+}
+
+function parseCookies(req) {
+  const cookies = {};
+  String(req.headers.cookie || '').split(';').forEach((pair) => {
+    const index = pair.indexOf('=');
+    if (index > 0) cookies[pair.slice(0, index).trim()] = pair.slice(index + 1).trim();
+  });
+  return cookies;
+}
+
+function getAdminSessionToken(req) {
+  const token = parseCookies(req)[ADMIN_COOKIE];
+  if (!token) return null;
+  const expiresAt = adminSessions.get(token);
+  if (!expiresAt) return null;
+  if (expiresAt < Date.now()) {
+    adminSessions.delete(token);
+    return null;
+  }
+  return token;
+}
+
+function buildAdminCookie(req, token, maxAgeSeconds) {
+  // За nginx соединение с клиентом всегда https; локально (http) Secure-кука не сохранилась бы
+  const secure = req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : '';
+  return `${ADMIN_COOKIE}=${token}; Path=/api/admin; HttpOnly; SameSite=Strict; Max-Age=${maxAgeSeconds}${secure}`;
+}
+
+function isAdminLoginBlocked(ip) {
+  const now = Date.now();
+  const failures = (adminLoginFailures.get(ip) || []).filter((timestamp) => now - timestamp < ADMIN_LOGIN_WINDOW_MS);
+  adminLoginFailures.set(ip, failures);
+  return failures.length >= ADMIN_LOGIN_MAX_FAILURES;
+}
+
+function registerAdminLoginFailure(ip) {
+  const failures = adminLoginFailures.get(ip) || [];
+  failures.push(Date.now());
+  adminLoginFailures.set(ip, failures);
+}
+
+function pruneAdminState() {
+  const now = Date.now();
+  adminSessions.forEach((expiresAt, token) => {
+    if (expiresAt < now) adminSessions.delete(token);
+  });
+  adminLoginFailures.forEach((failures, ip) => {
+    if (!failures.some((timestamp) => now - timestamp < ADMIN_LOGIN_WINDOW_MS)) adminLoginFailures.delete(ip);
+  });
+}
+
+setInterval(pruneAdminState, 10 * 60 * 1000).unref();
+
+function isJsonRequest(req) {
+  // Изменяющие запросы только с JSON: обычная HTML-форма с чужого сайта так не отправит
+  return String(req.headers['content-type'] || '').toLowerCase().includes('application/json');
+}
+
+async function readJsonBody(req) {
+  const rawBody = await readRequestBody(req);
+  try {
+    const payload = JSON.parse(rawBody || '{}');
+    return payload && typeof payload === 'object' ? payload : {};
+  } catch {
+    return {};
+  }
+}
+
+async function handleAdminApi(req, res, pathname) {
+  if (!ADMIN_ENABLED) {
+    sendJson(res, 503, { ok: false, enabled: false, message: 'Admin is disabled: ADMIN_PASSWORD is not set.' });
+    return;
+  }
+
+  if (pathname === '/api/admin/session' && req.method === 'GET') {
+    sendJson(res, 200, { ok: true, enabled: true, authenticated: Boolean(getAdminSessionToken(req)) });
+    return;
+  }
+
+  if (pathname === '/api/admin/login' && req.method === 'POST') {
+    const ip = getClientIp(req);
+    if (isAdminLoginBlocked(ip)) {
+      sendJson(res, 429, { ok: false, message: 'Too many failed attempts. Try again in 15 minutes.' });
+      return;
+    }
+    if (!isJsonRequest(req)) {
+      sendJson(res, 415, { ok: false, message: 'JSON expected.' });
+      return;
+    }
+    const payload = await readJsonBody(req);
+    if (!isAdminPasswordValid(payload.password || '')) {
+      registerAdminLoginFailure(ip);
+      console.warn('[admin] failed login from', ip);
+      sendJson(res, 401, { ok: false, message: 'Wrong password.' });
+      return;
+    }
+    adminLoginFailures.delete(ip);
+    const token = crypto.randomBytes(32).toString('hex');
+    adminSessions.set(token, Date.now() + ADMIN_SESSION_TTL_MS);
+    res.setHeader('Set-Cookie', buildAdminCookie(req, token, ADMIN_SESSION_TTL_MS / 1000));
+    sendJson(res, 200, { ok: true });
+    return;
+  }
+
+  const token = getAdminSessionToken(req);
+  if (!token) {
+    sendJson(res, 401, { ok: false, message: 'Not authenticated.' });
+    return;
+  }
+
+  if (pathname === '/api/admin/logout' && req.method === 'POST') {
+    adminSessions.delete(token);
+    res.setHeader('Set-Cookie', buildAdminCookie(req, '', 0));
+    sendJson(res, 200, { ok: true });
+    return;
+  }
+
+  if (pathname === '/api/admin/leads' && req.method === 'GET') {
+    const leads = await loadLeads();
+    const sorted = leads.slice().sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+    sendJson(res, 200, { ok: true, leads: sorted });
+    return;
+  }
+
+  const leadMatch = pathname.match(/^\/api\/admin\/leads\/([0-9a-f-]{36})$/);
+  if (leadMatch && req.method === 'PATCH') {
+    if (!isJsonRequest(req)) {
+      sendJson(res, 415, { ok: false, message: 'JSON expected.' });
+      return;
+    }
+    const payload = await readJsonBody(req);
+    const changes = {};
+    if (payload.status !== undefined) {
+      if (!LEAD_STATUSES.includes(payload.status)) {
+        sendJson(res, 400, { ok: false, message: 'Unknown status.' });
+        return;
+      }
+      changes.status = payload.status;
+    }
+    if (payload.note !== undefined) {
+      changes.note = normalizeText(payload.note, LEAD_NOTE_MAX_LENGTH);
+    }
+    const record = await updateLead(leadMatch[1], changes);
+    if (!record) {
+      sendJson(res, 404, { ok: false, message: 'Lead not found.' });
+      return;
+    }
+    sendJson(res, 200, { ok: true, lead: record });
+    return;
+  }
+
+  sendJson(res, 404, { ok: false, message: 'Not found.' });
+}
+
 function resolveFilePath(urlPath) {
   let safePath;
   try {
-    safePath = decodeURIComponent(urlPath === '/' ? '/index.html' : urlPath);
+    // Каталог отдаём его index.html, как nginx: /admin/ → /admin/index.html
+    safePath = decodeURIComponent(urlPath.endsWith('/') ? `${urlPath}index.html` : urlPath);
   } catch {
     return null; // битый %-escape: без try исключение роняло процесс
   }
@@ -232,7 +478,7 @@ function resolveFilePath(urlPath) {
   const segments = safePath.split(/[/\\]/);
   if (
     segments.some((segment) => segment.startsWith('.')) ||
-    /^\/(node_modules|deploy|session-handoffs)(\/|$)/.test(safePath) ||
+    /^\/(node_modules|deploy|session-handoffs|data)(\/|$)/.test(safePath) ||
     /^\/(server\.js|package(-lock)?\.json)$/.test(safePath)
   ) {
     return null;
@@ -292,7 +538,35 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
-      await sendLeadEmail(lead, ip);
+      // Сначала сохраняем, потом письмо: упавшая почта больше не теряет заявку
+      let record = null;
+      try {
+        record = await saveNewLead(lead, ip);
+      } catch (error) {
+        console.error('[contact-form] lead was not saved', error);
+      }
+
+      let mail;
+      try {
+        await sendLeadEmail(lead, ip);
+        mail = { status: MAIL_DRY_RUN ? 'dry_run' : 'sent' };
+      } catch (error) {
+        console.error('[contact-form] email failed', error);
+        mail = { status: 'failed', error: normalizeText(error && error.message, 300) };
+      }
+
+      if (record) {
+        try {
+          await updateLead(record.id, { mail: { ...mail, at: new Date().toISOString() } });
+        } catch (error) {
+          console.error('[contact-form] mail status was not saved', error);
+        }
+      }
+
+      if (!record && mail.status === 'failed') {
+        sendJson(res, 500, { ok: false, message: 'Internal server error.' });
+        return;
+      }
       sendJson(res, 200, { ok: true });
       return;
     } catch (error) {
@@ -300,6 +574,16 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, 500, { ok: false, message: 'Internal server error.' });
       return;
     }
+  }
+
+  if (requestUrl.pathname.startsWith('/api/admin/')) {
+    try {
+      await handleAdminApi(req, res, requestUrl.pathname);
+    } catch (error) {
+      console.error('[admin] request failed', error);
+      if (!res.headersSent) sendJson(res, 500, { ok: false, message: 'Internal server error.' });
+    }
+    return;
   }
 
   if (req.method === 'GET' || req.method === 'HEAD') {

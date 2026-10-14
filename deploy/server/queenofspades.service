@@ -13,6 +13,11 @@ User=www-data
 Group=www-data
 Environment=NODE_ENV=production
 
+# Заявки из формы: /var/lib/queenofspades/leads.json, вне каталога сайта (rsync --delete его не трогает).
+# systemd создаёт каталог с владельцем www-data и передаёт путь в STATE_DIRECTORY.
+StateDirectory=queenofspades
+StateDirectoryMode=0700
+
 # Базовая изоляция процесса
 NoNewPrivileges=true
 ProtectSystem=full

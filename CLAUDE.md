@@ -41,7 +41,8 @@ second fully translated language; the other 8 dropdown languages back-fill missi
 
 ```
 ├── index.html, style.css, script.js, icons.css   ← the landing page (see Architecture below)
-├── server.js, package.json                        ← Node http server + POST /api/contact (nodemailer)
+├── server.js, package.json                        ← Node http server + POST /api/contact (nodemailer) + admin API
+├── admin/{index.html, admin.css, admin.js}        ← super-admin lead inbox at /admin/ (Russian only, own CSS)
 ├── contact/, privacy/, terms/, services/ (index + mvp-development, saas-development, marketplace-development, ai-integration)
 ├── 404.html, robots.txt, sitemap.xml, CNAME, favicon*/og-image.png
 ├── deploy/server/{nginx-queenofspades.conf, queenofspades.service}, deploy/MIGRATION.md
@@ -87,16 +88,29 @@ committed spec files — it's available for ad-hoc manual browser checks, not a 
 
 Plain `http` module (no Express). Responsibilities:
 - Serves static files from the repo root, refusing any dot-segment (`.env`, `.git`, `.deploy_*`),
-  `node_modules/`, `deploy/`, `session-handoffs/`, `server.js`, `package*.json`. This is a local-dev
-  convenience: in production nginx serves the static files itself and forwards **only**
-  `location = /api/contact` to Node, so public hiding is done by nginx `deny` rules — keep both lists
-  in sync.
+  `node_modules/`, `deploy/`, `session-handoffs/`, `data/`, `server.js`, `package*.json`. This is a
+  local-dev convenience: in production nginx serves the static files itself and forwards **only**
+  `location = /api/contact` and `location ^~ /api/admin/` to Node, so public hiding is done by nginx
+  `deny` rules — keep both lists in sync.
 - `POST /api/contact` → validates payload (honeypot `companyWebsite` field, min description length),
-  rate-limits by IP (5 attempts / 10 min window, 20s min interval between attempts), sends the lead via
-  `nodemailer` SMTP (or logs it when `MAIL_DRY_RUN=true`).
+  rate-limits by IP (5 attempts / 10 min window, 20s min interval between attempts), **first saves the
+  lead** to `leads.json`, then sends it via `nodemailer` SMTP (or logs it when `MAIL_DRY_RUN=true`) and
+  records the mail result on the lead. A broken mailbox no longer loses leads: the visitor gets 200 as
+  long as the lead was saved; 500 only if both saving and mail failed.
+- **Lead storage** — one JSON file `leads.json`, rewritten atomically (tmp + rename). Directory:
+  `LEADS_DIR` → `STATE_DIRECTORY` (systemd `StateDirectory=queenofspades` → `/var/lib/queenofspades`)
+  → `./data` locally. It lives outside the web root on purpose: `rsync --delete` would wipe it. A
+  corrupt file is never overwritten — saving fails loudly instead.
+- **Super-admin cabinet** `/admin/` + `/api/admin/{session,login,logout,leads,leads/:id}` — one password
+  from `ADMIN_PASSWORD` (≥12 chars, otherwise the API answers 503 and the cabinet is off). Sessions are
+  in-memory (`HttpOnly; SameSite=Strict; Path=/api/admin` cookie, 12 h; a restart logs out), 5 failed
+  logins / 15 min per IP, mutating calls require `Content-Type: application/json`. `PATCH` changes only
+  `status` (`new|in_progress|done|spam`) and `note`. nginx serves `/admin/` with `no-store`, `noindex`
+  and a strict CSP (no inline scripts/styles — keep it that way).
 
 Required env vars (see `.env.example`): `PORT`, `MAIL_TO`, `MAIL_FROM`, `SMTP_HOST`, `SMTP_PORT`,
-`SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_DRY_RUN`. On the VPS Node runs on `PORT=3001`, matching
+`SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_DRY_RUN`, `ADMIN_PASSWORD`; optional `LEADS_DIR`.
+On the VPS Node runs on `PORT=3001`, matching
 `proxy_pass http://127.0.0.1:3001` in `deploy/server/nginx-queenofspades.conf` — change both together.
 Node binds `127.0.0.1` only. The rate limiter trusts proxy headers only when the socket peer is
 loopback (i.e. nginx), and then uses `X-Real-IP` or the **last** `X-Forwarded-For` entry — never the

@@ -25,3 +25,6 @@ id_ed25519.pub
 
 # Handoff-файлы сессий — локальные, репозиторий публичный
 session-handoffs/
+
+# Заявки из формы при локальном запуске (на VPS — /var/lib/queenofspades)
+data/

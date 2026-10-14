@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Заявки · Queen of Spades</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/admin/admin.css?v=1">
+</head>
+<body>
+
+<!-- Проверка сессии: до ответа сервера показываем только шапку -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="/" title="Открыть сайт">Queen of Spades</a>
+    <span class="brand-sep" aria-hidden="true">/</span>
+    <span class="brand-page">Заявки</span>
+    <div class="topbar-actions" id="topbarActions" hidden>
+      <button type="button" class="btn btn-ghost" id="refreshBtn">Обновить</button>
+      <button type="button" class="btn btn-ghost" id="logoutBtn">Выйти</button>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- Вход -->
+  <section class="login" id="loginView" hidden aria-labelledby="loginTitle">
+    <form class="login-form" id="loginForm" novalidate>
+      <h1 id="loginTitle">Вход в кабинет</h1>
+      <label for="password">Пароль</label>
+      <input type="password" id="password" name="password" autocomplete="current-password" required>
+      <p class="form-error" id="loginError" role="alert"></p>
+      <button type="submit" class="btn btn-primary" id="loginBtn">Войти</button>
+    </form>
+  </section>
+
+  <!-- Кабинет выключен на сервере -->
+  <section class="notice" id="disabledView" hidden>
+    <h1>Кабинет выключен</h1>
+    <p>На сервере не задан пароль. Впишите <code>ADMIN_PASSWORD</code> (от 12 символов) в <code>.env</code> и перезапустите сервис <code>queenofspades</code>.</p>
+  </section>
+
+  <!-- Список заявок -->
+  <section class="leads" id="leadsView" hidden aria-label="Заявки">
+    <div class="toolbar">
+      <div class="tabs" role="tablist" id="statusTabs"></div>
+      <input type="search" class="search" id="searchInput" placeholder="Поиск по контакту и тексту" aria-label="Поиск по заявкам">
+    </div>
+    <p class="load-error" id="loadError" role="alert" hidden></p>
+    <ol class="lead-list" id="leadList" aria-live="polite"></ol>
+  </section>
+
+</main>
+
+<template id="leadTemplate">
+  <li class="lead">
+    <div class="lead-meta">
+      <time class="lead-date"></time>
+      <span class="lead-type"></span>
+      <span class="mail-badge"></span>
+    </div>
+    <div class="lead-body">
+      <div class="lead-contact"></div>
+      <p class="lead-description"></p>
+      <button type="button" class="link-btn lead-more" hidden>Показать полностью</button>
+      <label class="note-label">
+        <span>Заметка</span>
+        <textarea class="lead-note" rows="1" maxlength="2000" placeholder="Созвонились, ждём ТЗ…"></textarea>
+      </label>
+    </div>
+    <div class="lead-side">
+      <select class="lead-status" aria-label="Статус заявки">
+        <option value="new">Новая</option>
+        <option value="in_progress">В работе</option>
+        <option value="done">Закрыта</option>
+        <option value="spam">Спам</option>
+      </select>
+      <span class="save-state" aria-live="polite"></span>
+    </div>
+  </li>
+</template>
+
+<script src="/admin/admin.js?v=1"></script>
+</body>
+</html>

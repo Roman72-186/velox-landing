@@ -29,6 +29,7 @@ on:
       - 'privacy/**'
       - 'terms/**'
       - 'services/**'
+      - 'admin/**'
       - 'deploy/server/**'
       - '.github/workflows/deploy.yml'
   workflow_dispatch:
@@ -68,6 +69,7 @@ jobs:
             --exclude='.github/' \
             --exclude='.claude/' \
             --exclude='node_modules/' \
+            --exclude='data/' \
             --exclude='.env' \
             --exclude='.env.*' \
             --exclude='.deploy_*' \
@@ -116,4 +118,19 @@ jobs:
           case "$API" in
             400|429) ;;
             *) echo "Unexpected API status: $API" && exit 1 ;;
+          esac
+
+          # Кабинет: страница отдаётся, API отвечает (503 = ADMIN_PASSWORD ещё не задан)
+          ADMIN_PAGE=$(curl -sS -o /dev/null -w "%{http_code}" \
+            --resolve "queenofspades.tech:443:${HOST}" \
+            https://queenofspades.tech/admin/)
+          echo "Admin page HTTP $ADMIN_PAGE"
+          test "$ADMIN_PAGE" = "200"
+          ADMIN_API=$(curl -sS -o /dev/null -w "%{http_code}" \
+            --resolve "queenofspades.tech:443:${HOST}" \
+            https://queenofspades.tech/api/admin/session)
+          echo "Admin API HTTP $ADMIN_API"
+          case "$ADMIN_API" in
+            200|503) ;;
+            *) echo "Unexpected admin API status: $ADMIN_API" && exit 1 ;;
           esac
